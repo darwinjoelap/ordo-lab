@@ -1,4 +1,5 @@
-"""Pantallas base del laboratorio (Fase 08d). Sólo orquestan: no tocan el ORM."""
+"""Pantallas base del laboratorio (Fase 08d) y PWA base (Fase 13). Sólo orquestan: no
+tocan el ORM."""
 from django import forms
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
@@ -44,3 +45,25 @@ def style_guide(request):
     if request.GET:
         form.is_valid()
     return render(request, "core/style_guide.html", {"form": form})
+
+
+# --- PWA base (Fase 13) ------------------------------------------------------------
+# Sin @login_required: el navegador pide estos tres sin pasar por una sesión "normal"
+# (instalación del service worker, lectura del manifest); exigir sesión aquí cachearía
+# una redirección al login en vez del script o la página de respaldo.
+
+def service_worker(request):
+    """Se sirve en la raíz ("/sw.js", registrado así en apps.core.urls incluido sin
+    prefijo) para que su alcance por defecto sea todo el origen del laboratorio."""
+    return render(request, "core/sw.js", content_type="application/javascript")
+
+
+def manifest(request):
+    return render(
+        request, "core/manifest.webmanifest", content_type="application/manifest+json"
+    )
+
+
+def offline(request):
+    """Respaldo del service worker cuando la página pedida no estaba en caché."""
+    return render(request, "core/offline.html")

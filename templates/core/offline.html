@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% comment %}
+Página de respaldo del service worker (Fase 13): se muestra cuando una navegación no
+estaba guardada en caché y no hay conexión. Extiende base.html directamente (no
+base_tenant.html) para no depender de nada que no esté precacheado en el "esqueleto".
+{% endcomment %}
+{% block title %}Sin conexión · Biolife{% endblock %}
+{% block body %}
+<main class="auth">
+  <div class="card auth__card">
+    <h1>Sin conexión</h1>
+    <p>Esta página no se guardó para consultarla sin conexión.</p>
+    <p class="muted small">Las órdenes y pacientes que ya abriste antes deberían seguir
+      funcionando. Cuando vuelva la conexión, esto se actualiza solo.</p>
+  </div>
+</main>
+{% endblock %}
