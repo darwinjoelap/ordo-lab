@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static ui %}
+{% comment %}
+Estructura del panel de plataforma (Fase 12): mismo esqueleto visual que
+base_tenant.html, sin marca ni navegación de laboratorio — esto no es el sistema de
+un laboratorio, es el panel interno de Biolife.
+{% endcomment %}
+{% block title %}{% block page_title_text %}Panel{% endblock %} · Biolife{% endblock %}
+{% block body %}
+<div class="app">
+  <aside class="sidebar" aria-label="Navegación de la plataforma">
+    <a class="sidebar__brand" href="{% url 'tenants:dashboard' %}" title="Biolife">
+      <img src="{% static 'img/brand/biolife-mark-96.png' %}" alt="">
+      <span class="wordmark"><b>Bio</b><span>life</span></span>
+    </a>
+    <div class="sidebar__tenant">Panel de plataforma</div>
+    <nav class="nav">
+      <a class="nav__item {% nav_active request '/panel/' %}" href="{% url 'tenants:dashboard' %}">{% icon "house" %}<span>Resumen</span></a>
+      <a class="nav__item {% if '/panel/laboratorios/' in request.path %}is-active{% endif %}" href="{% url 'tenants:tenant-list' %}">{% icon "building" %}<span>Laboratorios</span></a>
+      <a class="nav__item {% if '/panel/planes/' in request.path %}is-active{% endif %}" href="{% url 'tenants:plan-list' %}">{% icon "tag" %}<span>Planes</span></a>
+    </nav>
+    <div class="sidebar__foot">
+      <span class="avatar" title="{{ user.get_full_name|default:user.username }}">{{ user|initials }}</span>
+      <span class="who"><strong>{{ user.get_full_name|default:user.username }}</strong><small>Equipo Biolife</small></span>
+      <form method="post" action="{% url 'accounts:logout' %}" class="who" style="margin-left:auto">
+        {% csrf_token %}
+        <button class="btn btn--ghost btn--icon" title="Cerrar sesión" aria-label="Cerrar sesión">{% icon "log-out" %}</button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar__title">
+        <div class="crumbs">{% block crumbs %}Plataforma{% endblock %}</div>
+        <h1>{% block page_title %}Panel{% endblock %}</h1>
+      </div>
+      <div class="topbar__actions">{% block page_actions %}{% endblock %}</div>
+    </header>
+
+    <main class="content">
+      {% if messages %}
+      <div class="messages" role="status">
+        {% for message in messages %}
+        <div class="alert alert--{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}ok{% elif message.tags == 'warning' %}warn{% else %}info{% endif %}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}

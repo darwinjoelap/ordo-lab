@@ -1,0 +1,39 @@
+{% extends "tenants/base_platform.html" %}
+{% load ui %}
+{% block page_title_text %}Laboratorios{% endblock %}
+{% block crumbs %}Plataforma{% endblock %}
+{% block page_title %}Laboratorios{% endblock %}
+{% block page_actions %}<a class="btn btn--primary" href="{% url 'tenants:tenant-new' %}">{% icon "plus" %} Nuevo laboratorio</a>{% endblock %}
+{% block content %}
+<section class="card">
+  <form method="get" class="card__head row" role="search">
+    <select name="estado" onchange="this.form.submit()">
+      <option value="">Todos los estados</option>
+      {% for code, label in status_choices %}
+      <option value="{{ code }}" {% if status == code %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <span class="spacer"></span>
+    <label class="picker__input" style="width:min(280px,100%)"><span class="sr-only">Buscar</span>{% icon "search" %}
+      <input type="search" name="q" value="{{ query }}" placeholder="Nombre, esquema o RIF…"></label>
+  </form>
+  <div class="card__body card__body--flush table-wrap">
+    <table class="table">
+      <thead><tr><th>Laboratorio</th><th>Esquema</th><th>Estado</th><th>Ingresó</th><th>Pagado hasta</th></tr></thead>
+      <tbody>
+      {% for t in tenants %}
+      <tr style="cursor:pointer" onclick="location.href='{% url 'tenants:tenant-detail' t.pk %}'">
+        <td><a href="{% url 'tenants:tenant-detail' t.pk %}"><b>{{ t.name }}</b></a></td>
+        <td>{{ t.schema_name }}</td>
+        <td><span class="tag{% if t.status == 'ACTIVO' %} tag--ok{% endif %}">{{ t.get_status_display }}</span></td>
+        <td>{{ t.onboarded_at|date:"d/m/Y" }}</td>
+        <td>{{ t.paid_until|date:"d/m/Y"|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5"><div class="empty">{% icon "building" %}<h3>Sin laboratorios</h3>{% if query %}<p>No hay coincidencias con «{{ query }}».</p>{% endif %}</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

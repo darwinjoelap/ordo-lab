@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% comment %}
+Página de aviso de TenantAccessMiddleware (Fase 12): se muestra en CUALQUIER URL del
+dominio de un laboratorio en SUSPENDIDO/MOROSO/CANCELADO, incluso el login. No extiende
+base_tenant.html a propósito: no asume que nada del laboratorio se pueda cargar.
+{% endcomment %}
+{% block title %}Acceso suspendido{% endblock %}
+{% block body %}
+<main class="auth">
+  <div class="card auth__card">
+    <h1>Acceso suspendido</h1>
+    <p>El laboratorio «{{ tenant.name }}» no tiene acceso activo en este momento.</p>
+    <p class="muted small">Sus datos están intactos. Si cree que esto es un error, contacte a Biolife.</p>
+  </div>
+</main>
+{% endblock %}

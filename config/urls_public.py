@@ -2,9 +2,12 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 
-# TODO(FASE 08): agregar la vista de landing pública de Biolife
+# TODO(futuro): landing pública de Biolife en "" — hoy el panel de plataforma vive en
+# /panel/ (Fase 12) para dejar la raíz libre para esa landing.
 
 urlpatterns = [
+    path("panel/", include("apps.tenants.urls")),
+    path("cuenta/", include("apps.accounts.urls")),
     path("admin/", admin.site.urls),
 ]
 

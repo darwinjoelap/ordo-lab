@@ -1,0 +1,22 @@
+{% extends "tenants/base_platform.html" %}
+{% load ui %}
+{% block page_title_text %}{% if plan %}{{ plan.name }}{% else %}Nuevo plan{% endif %}{% endblock %}
+{% block crumbs %}<a href="{% url 'tenants:plan-list' %}">Planes</a>{% endblock %}
+{% block page_title %}{% if plan %}{{ plan.name }}{% else %}Nuevo plan{% endif %}{% endblock %}
+{% block content %}
+<form method="post" novalidate class="stack">
+  {% csrf_token %}
+  <section class="card">
+    <div class="card__head"><h2>{% icon "tag" %} Datos del plan</h2></div>
+    <div class="card__body form-grid">
+      {% for f, col, check in fields %}{% field f col %}{% endfor %}
+    </div>
+  </section>
+  <div class="actionbar card">
+    <span class="muted small">Las características detalladas (JSON) se editan por ahora desde /admin/.</span>
+    <span class="spacer"></span>
+    <a class="btn btn--ghost" href="{% url 'tenants:plan-list' %}">Volver</a>
+    <button class="btn btn--primary" type="submit">{% icon "save" %} Guardar</button>
+  </div>
+</form>
+{% endblock %}

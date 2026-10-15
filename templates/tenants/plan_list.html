@@ -1,0 +1,28 @@
+{% extends "tenants/base_platform.html" %}
+{% load ui %}
+{% block page_title_text %}Planes{% endblock %}
+{% block crumbs %}Plataforma{% endblock %}
+{% block page_title %}Planes{% endblock %}
+{% block page_actions %}<a class="btn btn--primary" href="{% url 'tenants:plan-new' %}">{% icon "plus" %} Nuevo plan</a>{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card__body card__body--flush table-wrap">
+    <table class="table">
+      <thead><tr><th>Plan</th><th>Código</th><th>Precio</th><th>Usuarios máx.</th><th>Visible en precios</th></tr></thead>
+      <tbody>
+      {% for p in plans %}
+      <tr style="cursor:pointer" onclick="location.href='{% url 'tenants:plan-edit' p.pk %}'">
+        <td><a href="{% url 'tenants:plan-edit' p.pk %}"><b>{{ p.name }}</b></a></td>
+        <td>{{ p.code }}</td>
+        <td>{{ p.price_monthly }} {{ p.currency }}</td>
+        <td>{{ p.max_users|default:"∞" }}</td>
+        <td>{% if p.is_public %}<span class="tag tag--ok">Sí</span>{% else %}<span class="tag">No</span>{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5"><div class="empty">{% icon "tag" %}<h3>Sin planes</h3></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "tenants/base_platform.html" %}
+{% load ui %}
+{% block page_title_text %}Nuevo laboratorio{% endblock %}
+{% block crumbs %}<a href="{% url 'tenants:tenant-list' %}">Laboratorios</a>{% endblock %}
+{% block page_title %}Nuevo laboratorio{% endblock %}
+{% block content %}
+<form method="post" novalidate class="stack">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert--danger">{% icon "triangle-alert" %}<span>{{ form.non_field_errors|join:" " }}</span></div>{% endif %}
+  <section class="card">
+    <div class="card__head"><h2>{% icon "building" %} Datos del laboratorio</h2></div>
+    <div class="card__body form-grid">
+      {% for f, col, check in fields %}{% field f col %}{% endfor %}
+    </div>
+  </section>
+  <div class="actionbar card">
+    <span class="muted small">Se crea el esquema, el dominio, la suscripción de prueba y el usuario administrador inicial. La contraseña temporal se muestra una sola vez.</span>
+    <span class="spacer"></span>
+    <a class="btn btn--ghost" href="{% url 'tenants:tenant-list' %}">Cancelar</a>
+    <button class="btn btn--primary" type="submit">{% icon "save" %} Crear</button>
+  </div>
+</form>
+{% endblock %}

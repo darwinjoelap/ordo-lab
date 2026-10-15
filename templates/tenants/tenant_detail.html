@@ -1,0 +1,75 @@
+{% extends "tenants/base_platform.html" %}
+{% load ui %}
+{% block page_title_text %}{{ tenant.name }}{% endblock %}
+{% block crumbs %}<a href="{% url 'tenants:tenant-list' %}">Laboratorios</a>{% endblock %}
+{% block page_title %}{{ tenant.name }} <span class="tag{% if tenant.status == 'ACTIVO' %} tag--ok{% endif %}">{{ tenant.get_status_display }}</span>{% endblock %}
+{% block page_actions %}
+{% if tenant.status == 'SUSPENDIDO' or tenant.status == 'MOROSO' or tenant.status == 'CANCELADO' %}
+<form method="post" action="{% url 'tenants:tenant-reactivate' tenant.pk %}" style="display:inline">{% csrf_token %}<button class="btn btn--primary" type="submit">{% icon "play" %} Reactivar</button></form>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="grid grid-2">
+  <section class="card">
+    <div class="card__head"><h2>{% icon "building" %} Datos</h2></div>
+    <form method="post" class="card__body form-grid">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="editar">
+      {% for f, col, check in edit_fields %}{% field f col %}{% endfor %}
+      <div class="col-12"><button class="btn btn--primary" type="submit">{% icon "save" %} Guardar</button></div>
+    </form>
+  </section>
+  <section class="card">
+    <div class="card__head"><h2>{% icon "globe" %} Dominio y esquema</h2></div>
+    <div class="card__body">
+      <ul>
+      {% for d in domains %}<li>{{ d.domain }}{% if d.is_primary %} <span class="tag tag--ok">primario</span>{% endif %}</li>{% endfor %}
+      </ul>
+      <span class="muted small">Esquema: <code>{{ tenant.schema_name }}</code></span>
+    </div>
+  </section>
+</div>
+
+{% if tenant.status == 'ACTIVO' or tenant.status == 'DEMO' %}
+<section class="card">
+  <div class="card__head"><h2>{% icon "ban" %} Suspender</h2></div>
+  <form method="post" action="{% url 'tenants:tenant-suspend' tenant.pk %}" class="card__body stack">
+    {% csrf_token %}
+    <p class="muted small">No podrá entrar a nada — ni al login — hasta que lo reactive. Sus datos no se tocan.</p>
+    <div class="field"><label>Motivo (opcional, queda anotado)</label><textarea name="motivo" rows="2"></textarea></div>
+    <div><button class="btn btn--ghost" type="submit">{% icon "ban" %} Suspender «{{ tenant.name }}»</button></div>
+  </form>
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="card__head"><h2>{% icon "credit-card" %} Suscripciones</h2></div>
+  <div class="card__body card__body--flush table-wrap">
+    <table class="table">
+      <thead><tr><th>Plan</th><th>Estado</th><th>Desde</th><th>Hasta</th><th></th></tr></thead>
+      <tbody>
+      {% for s in subscriptions %}
+      <tr>
+        <td><b>{{ s.plan.name }}</b></td>
+        <td><span class="tag{% if s.status == 'ACTIVA' %} tag--ok{% endif %}">{{ s.get_status_display }}</span></td>
+        <td>{{ s.current_period_start|date:"d/m/Y" }}</td>
+        <td>{{ s.current_period_end|date:"d/m/Y" }}</td>
+        <td>
+        {% if s.status == 'ACTIVA' %}
+        <form method="post" action="{% url 'tenants:subscription-cancel' s.pk %}" style="display:inline">{% csrf_token %}<button class="btn btn--ghost btn--icon" title="Cancelar">{% icon "x" %}</button></form>
+        {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5"><div class="empty">{% icon "credit-card" %}<h3>Sin suscripciones</h3></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <form method="post" action="{% url 'tenants:subscription-new' tenant.pk %}" class="card__body form-grid">
+    {% csrf_token %}
+    {% for f, col, check in subscription_fields %}{% field f col %}{% endfor %}
+    <div class="col-12"><button class="btn btn--ghost" type="submit">{% icon "plus" %} Agregar suscripción</button></div>
+  </form>
+</section>
+{% endblock %}

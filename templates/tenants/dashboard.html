@@ -1,0 +1,40 @@
+{% extends "tenants/base_platform.html" %}
+{% load ui %}
+{% block page_title_text %}Resumen{% endblock %}
+{% block crumbs %}Plataforma{% endblock %}
+{% block page_title %}Resumen{% endblock %}
+{% block content %}
+<div class="grid grid-4">
+  <div class="card"><div class="card__body"><span class="muted small">Laboratorios</span><h2>{{ metrics.total }}</h2></div></div>
+  <div class="card"><div class="card__body"><span class="muted small">Activos</span><h2>{{ metrics.by_status.ACTIVO }}</h2></div></div>
+  <div class="card"><div class="card__body"><span class="muted small">En demo</span><h2>{{ metrics.by_status.DEMO }}</h2></div></div>
+  <div class="card"><div class="card__body"><span class="muted small">Suspendidos / morosos</span><h2>{{ metrics.by_status.SUSPENDIDO|add:metrics.by_status.MOROSO }}</h2></div></div>
+</div>
+
+<section class="card">
+  <div class="card__head"><h2>{% icon "dollar-sign" %} Ingreso recurrente estimado (MRR)</h2></div>
+  <div class="card__body">
+    <h2>${{ metrics.mrr_usd }}</h2>
+    <span class="muted small">Suma de `price_monthly` de los planes con suscripción activa. No distingue moneda del plan — limitación conocida (ver `docs/roadmap/12_superadmin.md`).</span>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card__head"><h2>{% icon "clock" %} Pruebas por vencer (próximos 7 días)</h2></div>
+  <div class="card__body card__body--flush table-wrap">
+    <table class="table">
+      <thead><tr><th>Laboratorio</th><th>Vence</th></tr></thead>
+      <tbody>
+      {% for t in metrics.trials_ending_soon %}
+      <tr>
+        <td><a href="{% url 'tenants:tenant-detail' t.pk %}"><b>{{ t.name }}</b></a></td>
+        <td>{{ t.trial_ends_at|date:"d/m/Y" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="2"><div class="empty">{% icon "check" %}<h3>Nada por vencer</h3></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
