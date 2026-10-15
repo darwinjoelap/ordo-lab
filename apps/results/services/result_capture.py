@@ -339,16 +339,23 @@ def _frozen_inputs(sheet: Sheet) -> dict[str, str]:
 
 
 @transaction.atomic
-def save_sheet(order, *, entries: dict, notes: dict | None = None, user=None) -> Sheet:
+def save_sheet(order, *, entries: dict, notes: dict | None = None, user=None,
+               source: str | None = None, at=None) -> Sheet:
     """Guarda lo capturado. Lanza `ApplicationError` si hay valores inválidos o se intenta
-    cambiar un insumo de un calculado ya validado."""
+    cambiar un insumo de un calculado ya validado.
+
+    `source` y `at` son para la sincronización offline (Fase 14): marcan los valores
+    manuales como `OFFLINE_SYNC` y registran la hora real de la captura en el
+    dispositivo, no la de la sincronización. El cálculo, los rangos y las marcas se
+    resuelven **aquí**: el dispositivo sólo guardó lo escrito en crudo.
+    """
     if order.is_cancelled:
         raise ApplicationError(f"La orden {order.number} está anulada.")
     sheet = build_sheet(order, entries=entries, notes=notes)
     if sheet.errors:
         raise ApplicationError(" ".join(sheet.errors), extra={"sheet": sheet})
     guarded = _frozen_inputs(sheet)
-    now = timezone.now()
+    now = at or timezone.now()
     for block in sheet.blocks:
         if block.result.is_validated:
             continue
@@ -363,9 +370,9 @@ def save_sheet(order, *, entries: dict, notes: dict | None = None, user=None) ->
                     f"{row.parameter.name} alimenta a {guarded[row.parameter.code]}, que ya "
                     "está validado: no se puede cambiar (corrija con una rectificación)."
                 )
-            _persist_row(block.result, row)
+            _persist_row(block.result, row, source=source)
             changed = changed or not row.is_calculated
-        _update_status(block, sheet, user=user if changed else None, now=now)
+        _update_status(block, sheet, user=user if changed else None, now=now, bump=changed)
     refresh_order_progress(order)
     return sheet
 
@@ -398,7 +405,7 @@ def _refresh_assessment(row: Row) -> None:
                                   "reference_text", "updated_at"])
 
 
-def _persist_row(result: Result, row: Row) -> None:
+def _persist_row(result: Result, row: Row, *, source: str | None = None) -> None:
     if row.parsed.is_empty:
         if row.stored is not None:
             row.stored.delete()
@@ -414,14 +421,16 @@ def _persist_row(result: Result, row: Row) -> None:
     value.interpretation = row.assessment.interpretation
     value.reference_range = row.reference_range
     value.reference_text = row.reference_text
+    # Un calculado siempre es CALCULADO, lo haya disparado la captura en línea o la
+    # sincronización: el valor lo produjo el motor de fórmulas del servidor.
     value.source = (ResultValue.Source.CALCULADO if row.is_calculated
-                    else ResultValue.Source.MANUAL)
+                    else (source or ResultValue.Source.MANUAL))
     value.save()
     value.multi_options.set(parsed.options)
     row.stored = value
 
 
-def _update_status(block: Block, sheet: Sheet, *, user, now) -> None:
+def _update_status(block: Block, sheet: Sheet, *, user, now, bump: bool = False) -> None:
     result = block.result
     fields = ["status", "calculation_context", "updated_at"]
     result.calculation_context = sheet.context
@@ -429,6 +438,12 @@ def _update_status(block: Block, sheet: Sheet, *, user, now) -> None:
     if user is not None:
         result.entered_by, result.entered_at = user, now
         fields += ["entered_by", "entered_at"]
+    if bump:
+        # Sube en cada guardado con cambios reales: la sincronización offline (Fase 14)
+        # compara esta versión con la que tenía el dispositivo al capturar para saber si
+        # alguien más lo cambió mientras tanto.
+        result.sync_version += 1
+        fields.append("sync_version")
     result.save(update_fields=fields)
     item_status = {Result.Status.CARGADO: "CARGADO"}.get(
         result.status, "EN_PROCESO" if block.has_values else "PENDIENTE")

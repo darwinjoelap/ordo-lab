@@ -201,9 +201,32 @@ hr { border: 0; border-top: 1px solid var(--line); margin: var(--s4) 0; }
   width: 30px; height: 30px; border-radius: 50%;
   background: var(--bl-navy); color: #fff; font-size: var(--fs-xs); font-weight: 600;
 }
+.avatar--btn { border: 0; cursor: pointer; }
 .who { min-width: 0; line-height: 1.2; }
 .who strong { display: block; font-size: var(--fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .who small { color: var(--muted); font-size: var(--fs-xs); }
+
+/* Popover del avatar (Fase 13): mismo lugar de donde salía "Cerrar sesión" antes, ahora
+   agrupa perfil, instalar la app (si el navegador ofreció beforeinstallprompt) y salir. */
+.sidebar__foot { position: relative; }
+.popover {
+  position: absolute; left: var(--s3); right: var(--s3); bottom: calc(100% + var(--s2));
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r);
+  box-shadow: var(--shadow-2); padding: var(--s2); display: grid; gap: 2px; z-index: 20;
+}
+.popover__item {
+  display: flex; align-items: center; gap: var(--s3); width: 100%;
+  padding: var(--s2) var(--s3); border: 0; background: transparent; border-radius: var(--r-sm);
+  font-size: var(--fs-sm); color: inherit; text-align: left; cursor: pointer;
+}
+.popover__item:hover { background: var(--surface-2); text-decoration: none; }
+.popover form { display: contents; }
+
+.offline-banner {
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s2) var(--s5); background: var(--warn-soft); color: #78350f;
+  font-size: var(--fs-sm); border-bottom: 1px solid #fde68a;
+}
 
 /* ---------- Superficies ---------- */
 .card {

@@ -1,0 +1,142 @@
+{% extends "base_tenant.html" %}
+{% load ui %}
+{% comment %}
+Pantalla de Sincronización (Fase 14, tramo C): qué quedó sin subir, qué falló y qué
+choca con el trabajo de otra persona. Lo que está en la cola del propio dispositivo (y
+todavía no llegó al servidor) lo pinta `static/js/sync.js` en el primer bloque.
+{% endcomment %}
+{% block page_title_text %}Sincronización{% endblock %}
+{% block page_title %}Sincronización{% endblock %}
+{% block content_class %}content--narrow{% endblock %}
+{% block content %}
+
+<section class="card">
+  <div class="card__head"><h2>{% icon "rotate-ccw" %} En este dispositivo</h2>
+    <span class="spacer"></span>
+    <span class="tag tag--warn" data-sync-count hidden></span>
+  </div>
+  <div class="card__body">
+    <p class="muted small" style="margin:0">Lo capturado sin conexión se guarda aquí y se
+      envía solo al volver la conexión. Puede cerrar la app: no se pierde.</p>
+    <p class="small" style="margin-top:var(--s3)">
+      <button type="button" class="btn btn--sm" data-online-only
+              onclick="window.biolifeSync &amp;&amp; window.biolifeSync.flush()">
+        {% icon "send" %} Enviar ahora</button>
+    </p>
+  </div>
+</section>
+
+{% if conflicts %}
+<section class="card">
+  <div class="card__head" style="background:var(--warn-soft)">
+    <h2>{% icon "triangle-alert" %} Por revisar</h2>
+    <span class="muted small">chocaron con lo que ya había en el servidor</span>
+  </div>
+  <div class="card__body card__body--flush table-wrap">
+    <table class="table">
+      <thead><tr><th>Qué</th><th>Motivo</th><th>Dispositivo</th><th>Servidor</th>
+        <th>Cuándo</th><th></th></tr></thead>
+      <tbody>
+        {% for c in conflicts %}
+        <tr>
+          <td><b>{{ c.queue_entry.target_label|default:c.entity }}</b>
+            {% if c.field %}<span class="muted small">· {{ c.field }}</span>{% endif %}</td>
+          <td class="small">{{ c.get_reason_display }}
+            {% if c.notes %}<div class="muted">{{ c.notes }}</div>{% endif %}</td>
+          <td class="small"><b>{{ c.client_value|default:"—" }}</b></td>
+          <td class="small">{{ c.server_value|default:"—" }}</td>
+          <td class="small num">{{ c.created_at|date:"d/m h:i A" }}</td>
+          <td class="num">
+            {% if can_resolve %}
+            <form method="post" action="{% url 'sync:resolve' c.pk %}" class="inline-form">
+              {% csrf_token %}
+              <input name="notes" placeholder="Nota (opcional)" style="width:160px">
+              <button class="btn btn--sm">{% icon "check" %} Revisado</button>
+            </form>
+            {% else %}<span class="muted small">lo revisa el bioanalista</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card__body muted small" style="padding-top:0">
+    Marcar como revisado no sobrescribe nada: un resultado validado es inmutable. Si hay
+    que corregirlo, se captura de nuevo o se emite una rectificación.
+  </div>
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="card__head"><h2>{% icon "clipboard-list" %} Pendientes y fallidas</h2>
+    <span class="muted small">ya llegaron al servidor pero no se aplicaron</span></div>
+  <div class="card__body card__body--flush table-wrap">
+    <table class="table">
+      <thead><tr><th>Qué</th><th>Referencia</th><th>Estado</th><th>Dispositivo</th>
+        <th>Ocurrió</th><th></th></tr></thead>
+      <tbody>
+        {% for e in entries %}
+        <tr>
+          <td>{{ e.get_kind_display }}</td>
+          <td><b>{{ e.target_label|default:"—" }}</b></td>
+          <td class="small">
+            {% if e.status == "ERROR" %}<span class="tag tag--danger">Falló</span>
+            {% elif e.status == "CONFLICTO" %}<span class="tag tag--warn">En conflicto</span>
+            {% else %}<span class="tag">Por aplicar</span>{% endif %}
+            {% if e.error_detail %}<div class="muted">{{ e.error_detail }}</div>{% endif %}
+          </td>
+          <td class="small">{{ e.device }}</td>
+          <td class="small num">{{ e.client_created_at|date:"d/m h:i A" }}</td>
+          <td class="num">{% if e.status == "ERROR" %}
+            <form method="post" action="{% url 'sync:retry' e.pk %}">{% csrf_token %}
+              <button class="btn btn--sm" data-online-only>{% icon "rotate-ccw" %} Reintentar</button>
+            </form>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="empty">{% icon "circle-check" %}
+          <h3>Nada pendiente</h3><p class="small">Todo lo capturado sin conexión se
+            aplicó.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if blocks %}
+<section class="card">
+  <div class="card__head"><h2>{% icon "qr-code" %} Numeración reservada hoy</h2>
+    <span class="muted small">para registrar órdenes sin conexión</span></div>
+  <div class="card__body card__body--flush table-wrap">
+    <table class="table">
+      <thead><tr><th>Dispositivo</th><th>Rango</th><th class="num">Usados</th></tr></thead>
+      <tbody>
+        {% for d in blocks %}{% for b in d.number_blocks.all %}
+        <tr><td>{{ d }}</td>
+          <td class="num">{{ b.from_value|stringformat:"04d" }} – {{ b.to_value|stringformat:"04d" }}</td>
+          <td class="num">{{ b.consumed }} de {{ b.size }}</td></tr>
+        {% endfor %}{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if recent %}
+<section class="card">
+  <div class="card__head"><h2>{% icon "circle-check" %} Aplicadas</h2>
+    <span class="muted small">últimas 15</span></div>
+  <div class="card__body card__body--flush table-wrap">
+    <table class="table">
+      <thead><tr><th>Qué</th><th>Referencia</th><th>Dispositivo</th><th>Aplicada</th></tr></thead>
+      <tbody>
+        {% for e in recent %}
+        <tr><td>{{ e.get_kind_display }}</td><td><b>{{ e.target_label|default:"—" }}</b></td>
+          <td class="small">{{ e.device }}</td>
+          <td class="small num">{{ e.applied_at|date:"d/m h:i A" }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

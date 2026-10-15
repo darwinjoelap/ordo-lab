@@ -976,3 +976,68 @@ y entregarla al médico.
 **Consecuencias.** Si un rango se edita en el lugar, la banda de puntos viejos refleja el
 rango editado (el texto impreso sí queda congelado). Parámetros codificados en la
 evolución y la unión de pacientes duplicados quedan fuera.
+
+---
+
+## ADR-033 — Escritura offline: idempotencia por `client_mutation_id` y cálculo clínico sólo en el servidor
+**Fecha:** 2026-10-14 · **Estado:** Aceptada
+
+**Contexto.** La conexión se cae: en el domicilio del paciente, donde el auxiliar toma la
+muestra, y en el propio laboratorio mientras el bioanalista carga resultados. El diseño de
+la Fase 00 (`00_ARQUITECTURA` §5) ya fijaba la mecánica —cola en IndexedDB,
+`client_mutation_id`, `sync_version`, conflictos registrados— pero no estaba construida.
+La pregunta real era cuánto del dominio se replica en el dispositivo.
+
+**Decisión.**
+- **La idempotencia no vive en código sino en un índice único**: `SyncQueueEntry.
+  client_mutation_id` (UUID v4 que genera el dispositivo y repite en cada reintento).
+  Encolar es un `get_or_create` por ese id y una entrada ya resuelta no se vuelve a
+  aplicar. Reenviar la cola completa diez veces deja un solo efecto.
+- **El dispositivo no calcula nada clínico.** Guarda lo escrito en crudo; el motor de
+  fórmulas, la resolución de rangos por sexo/edad/condición y las marcas alto/bajo/crítico
+  corren en `save_sheet()` al sincronizar. No se replica esa lógica en JavaScript: dos
+  implementaciones divergen con el tiempo y la divergencia aquí significa un valor crítico
+  que no se marca. El precio aceptado es que sin conexión no se ven calculados ni marcas.
+- **Un resultado validado nunca se sobrescribe** (regla de `CLAUDE.md`). La mutación queda
+  en `CONFLICTO` con el valor del dispositivo y el del servidor, y decide una persona;
+  corregir sigue siendo una rectificación (Fase 15). Igual con `sync_version`: si otro
+  usuario cambió el resultado mientras tanto, se registra el conflicto en vez de pisarlo.
+- **La cola es una puerta más al dominio**, así que repite el control de acceso de las
+  pantallas por tipo de mutación (`ROLES_BY_KIND`): el auxiliar de toma marca tubos por la
+  cola, pero no captura resultados ni registra órdenes aunque arme el JSON a mano.
+- La cola **local** guarda sólo lo que todavía no llegó al servidor; en cuanto el servidor
+  acusa recibo (aplicada, en conflicto o con error) la entrada se borra del dispositivo.
+  Una sola lista de verdad, consultable en la pantalla de *Sincronización*.
+- Validar, emitir PDF y cobrar siguen siendo sólo en línea; sus botones se deshabilitan
+  sin conexión en vez de dejar que el POST falle en el vacío.
+
+**Consecuencias.** La captura offline se ve "sin marcas" hasta sincronizar, lo que hay que
+explicarle al laboratorio. Una mutación se atribuye a quien la sincroniza, no a quien la
+capturó, si en el mismo dispositivo cambia el usuario. El JavaScript de la cola no tiene
+tests automáticos (no hay infraestructura de JS en el proyecto); se cubre el contrato que
+consume —los atributos `data-offline` de las plantillas— y todo el lado servidor.
+
+---
+
+## ADR-034 — Numeración de órdenes offline: bloques reservados por dispositivo
+**Fecha:** 2026-10-14 · **Estado:** Aceptada
+
+**Contexto.** El número de orden es `AAMMDD-NNNN` y el código de barras de cada tubo son
+esos mismos dígitos (ADR-024). El diseño original preveía crear órdenes offline con un
+número provisional y renumerar al sincronizar, pero entonces cualquier etiqueta impresa
+antes de sincronizar queda con un código que el sistema no conoce: tubos no
+identificables, que en un laboratorio es un problema clínico, no cosmético.
+
+**Decisión.** Cada dispositivo, **mientras tiene conexión**, reserva un rango de números
+del día (`OrderNumberBlock`) avanzando la misma `OrderNumberSequence` que usa la recepción
+en línea, y lo consume sin conexión. El número es definitivo desde que la orden nace: no
+hay renumeración. Un dispositivo puede pedir varios bloques el mismo día. El servidor
+comprueba que el número recibido salga de un bloque **de ese** dispositivo y que no exista
+ya, antes de crear la orden.
+
+**Consecuencias.** Pueden quedar huecos en la numeración del día si un dispositivo no
+consume todo su bloque — se acepta a cambio de que ninguna etiqueta mienta. Los **tubos**
+de una orden creada offline se generan al sincronizar: planificarlos exige el catálogo de
+envases y los requisitos por examen, y replicar eso en el dispositivo sería repetir el
+error que ADR-033 evita. Hasta sincronizar sólo se tiene el número de la orden, no el
+desglose `-SS` de cada tubo.

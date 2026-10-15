@@ -32,7 +32,10 @@ def _check_order_open(order: Order) -> None:
         raise ApplicationError(f"La orden {order.number} está anulada.")
 
 
-def collect_sample(*, sample: Sample, user=None) -> Sample:
+def collect_sample(*, sample: Sample, user=None, at=None) -> Sample:
+    """`at` es la hora real de la toma: la usa la sincronización offline (Fase 14) para no
+    registrar la hora en que llegó la mutación al servidor. Marcar dos veces es inocuo:
+    la segunda no hace nada (idempotente por estado)."""
     _check_order_open(sample.order)
     if sample.status == Sample.Status.RECHAZADA:
         raise ApplicationError(f"La muestra {sample.number} fue rechazada.")
@@ -40,7 +43,7 @@ def collect_sample(*, sample: Sample, user=None) -> Sample:
         return sample
     with transaction.atomic():
         sample.status = Sample.Status.TOMADA
-        sample.collected_at = timezone.now()
+        sample.collected_at = at or timezone.now()
         sample.collected_by = user
         sample.save(update_fields=["status", "collected_at", "collected_by", "updated_at"])
         refresh_order_status(sample.order)
@@ -57,9 +60,10 @@ def collect_all(*, order: Order, user=None) -> int:
     return len(pending)
 
 
-def reject_sample(*, sample: Sample, reason: str, user=None) -> Sample:
+def reject_sample(*, sample: Sample, reason: str, user=None, at=None) -> Sample:
     """Rechaza la muestra y crea su reemplazo (número nuevo, mismos exámenes). El número
-    rechazado nunca se reutiliza. Devuelve la muestra nueva."""
+    rechazado nunca se reutiliza. Devuelve la muestra nueva. `at`: hora real del rechazo
+    (sincronización offline, Fase 14)."""
     _check_order_open(sample.order)
     reason = (reason or "").strip()
     if not reason:
@@ -69,7 +73,7 @@ def reject_sample(*, sample: Sample, reason: str, user=None) -> Sample:
     order = sample.order
     with transaction.atomic():
         sample.status = Sample.Status.RECHAZADA
-        sample.rejected_at = timezone.now()
+        sample.rejected_at = at or timezone.now()
         sample.rejected_by = user
         sample.rejection_reason = reason
         sample.save(update_fields=["status", "rejected_at", "rejected_by",

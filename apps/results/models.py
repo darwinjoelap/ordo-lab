@@ -36,6 +36,10 @@ class Result(TenantBaseModel):
     internal_note = models.TextField("Nota interna (no se imprime)", blank=True, default="")
     # Condición, peso, talla, orina, ISI y lote usados en los cálculos (copia al guardar).
     calculation_context = models.JSONField("Datos de cálculo", default=dict, blank=True)
+    # Sincronización offline (Fase 14): sube en cada guardado. El dispositivo manda la
+    # versión que tenía al capturar; si ya no coincide, alguien lo cambió primero y la
+    # mutación queda como conflicto en vez de pisar el trabajo del otro.
+    sync_version = models.PositiveIntegerField("Versión de sincronización", default=1)
 
     class Meta:
         verbose_name = "Resultado"

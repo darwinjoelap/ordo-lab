@@ -204,8 +204,16 @@ def create_order(
     discounts: Sequence = (), reference_currency=None, priority: str = Order.Priority.NORMAL,
     requested_by: str = "", notes: str = "", weight_kg=None, height_cm=None,
     urine_volume_24h_ml=None, created_by=None, authorized: bool = False,
+    number: str | None = None, ordered_at=None, client_mutation_id=None,
 ) -> tuple[Order, list[str]]:
-    """Registra la orden con sus exámenes y tubos. Devuelve `(orden, avisos)`."""
+    """Registra la orden con sus exámenes y tubos. Devuelve `(orden, avisos)`.
+
+    `number` y `ordered_at` existen para las órdenes creadas sin conexión (Fase 14): el
+    número ya salió de un bloque reservado al dispositivo y la hora es la real del
+    registro, no la de la sincronización. La cotización se arma con los precios y la tasa
+    de **ese** día, no los de hoy. En línea se omiten y la orden toma el siguiente número
+    de la secuencia.
+    """
     if not tests and not profiles:
         raise ApplicationError("Agregue al menos un examen o perfil a la orden.")
     if not patient.is_active:
@@ -214,7 +222,7 @@ def create_order(
     if inactive:
         raise ApplicationError(f"Exámenes inactivos: {', '.join(inactive)}.")
 
-    now = timezone.now()
+    now = ordered_at or timezone.now()
     draft = build_draft(
         tests=tests, profiles=profiles, price_list=price_list, discounts=discounts,
         reference_currency=reference_currency, on_date=timezone.localdate(now),
@@ -226,10 +234,12 @@ def create_order(
 
     with transaction.atomic():
         order = Order(
-            number=next_order_number(on_date=timezone.localdate(now)), patient=patient,
+            number=number or next_order_number(on_date=timezone.localdate(now)),
+            patient=patient,
             priority=priority, ordered_at=now, requested_by=requested_by, notes=notes,
             weight_kg=weight_kg, height_cm=height_cm,
             urine_volume_24h_ml=urine_volume_24h_ml, created_by=created_by,
+            client_mutation_id=client_mutation_id,
         )
         apply_draft_totals(order, draft)
         order.save()

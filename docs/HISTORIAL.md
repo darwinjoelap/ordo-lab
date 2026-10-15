@@ -33,7 +33,6 @@
   listas de opciones, observaciones generales, tubos, lotes, monedas, descuentos) con motor
   genérico en `core`; lotes también bioanalista y técnico, monedas y descuentos también
   facturación; moneda base fija (ADR-031). Verificado por Darwin: 287 passed, ruff limpio.
-- [x] Fase 11d (`9640297`): tablas auxiliares sin /admin (ADR-031). Verificado: 287 passed.
 - [x] Fase 11e (`518ba38`): pacientes sin /admin (lista, ficha, representantes,
   historial), antecedentes con parámetros a vigilar, evolución con gráfico SVG propio,
   tendencias, PDF para el médico, variación del valor anterior al cargar (ADR-032).
@@ -46,3 +45,31 @@
 conocimiento general de geografía venezolana, no por dato del laboratorio. Cantagallo, Dos
 Caminos, Las Minas y Píritu quedaron sin municipio por falta de certeza. Confirmar con el
 laboratorio antes de producción.
+
+## Fase 14 — Escritura offline y sincronización (2026-10-14)
+
+Ejecutada en Opus, como manda el índice del roadmap para esta fase. Respeta la mecánica
+que ya fijaba `00_ARQUITECTURA.md` §5 y la completa.
+
+- **App `apps.sync`**: `Device`, `OrderNumberBlock`, `SyncQueueEntry`, `SyncConflict`.
+  Campos nuevos en los modelos existentes: `Order.client_mutation_id`/`sync_version`,
+  `Result.sync_version`, `Patient.client_mutation_id` (migraciones `orders.0004`,
+  `patients.0004`, `results.0003`, `sync.0001`).
+- **Idempotencia** apoyada en el índice único de `client_mutation_id` (ADR-033): reenviar
+  la cola nunca duplica. **Cálculo clínico sólo en el servidor**: el dispositivo guarda en
+  crudo y `save_sheet()` resuelve fórmulas, rangos y marcas al sincronizar. Un resultado
+  validado nunca se sobrescribe: queda conflicto para revisión humana.
+- **Numeración por bloques reservados por dispositivo** (ADR-034): el número de una orden
+  creada sin conexión es definitivo desde que nace, así ninguna etiqueta queda con un
+  código de barras inexistente.
+- **Cliente** (`static/js/sync.js` + Dexie 4.0.11 como vendor, sin build): cola en
+  IndexedDB, interceptor de los formularios marcados con `data-offline`, reintento al
+  reconectar, TTL de 24 h, y `data-online-only` para lo que exige servidor.
+- **Pantalla** `/sincronizacion/`: cola del dispositivo, conflictos con el valor de cada
+  lado, reintento de las fallidas, numeración reservada y últimas aplicadas.
+- Verificado por Darwin: 350 passed, ruff limpio, migraciones aplicadas en `public` y
+  `demo_uno`, y prueba sin conexión completa en el navegador (encolar, reconectar sin
+  duplicar, marcas puestas por el servidor, y el choque contra un resultado validado).
+- **Queda aparte (tramo D):** crear órdenes y pacientes offline *desde el navegador*. El
+  servidor ya los acepta y está probado; falta el cliente, que exige precargar catálogo y
+  pacientes en IndexedDB porque *Nueva orden* busca por htmx.

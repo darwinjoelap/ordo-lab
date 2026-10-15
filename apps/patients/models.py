@@ -55,6 +55,10 @@ class Patient(TenantBaseModel):
     address = models.CharField("Dirección", max_length=255, blank=True, default="")
     phone = models.CharField("Teléfono", max_length=30, blank=True, default="")
     email = models.EmailField("Correo", blank=True, default="")
+    # Sincronización offline (Fase 14): id de la mutación que lo creó sin conexión.
+    # Único, así reenviar la cola no duplica el paciente. Vacío si se registró en línea.
+    client_mutation_id = models.UUIDField("Id de la mutación offline", null=True,
+                                           blank=True, unique=True)
 
     class Meta:
         verbose_name = "Paciente"

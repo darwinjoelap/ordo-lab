@@ -17,6 +17,7 @@ urlpatterns = [
     path("catalogo/", include("apps.catalog.urls")),
     path("precios/", include("apps.billing.urls")),
     path("verificar/", include("apps.reports.urls_public")),
+    path("sincronizacion/", include("apps.sync.urls")),
     path("admin/", admin.site.urls),
 ]
 

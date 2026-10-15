@@ -2,7 +2,10 @@
 
 ## Active
 
-
+- [ ] **Fase 14 — tramo D: crear órdenes y pacientes offline desde el navegador** - el servidor ya los acepta y está probado (apps.sync); falta el cliente: *Nueva orden* busca pacientes y exámenes por htmx, así que hace falta precargar catálogo y pacientes en IndexedDB, una variante offline de esa pantalla y consumir el bloque de numeración reservado. Ver `docs/roadmap/14_sync_offline.md` → Tramo D
+- [ ] **Fase 13 — PWA base y modo lectura offline (código verificado, falta probar en el navegador)** - service worker (Órdenes/Pacientes lista y detalle, sin acciones), manifest instalable, página `/offline/`, botón "Instalar app" dentro del popover del avatar; sin migraciones. `pytest` 315 passed y `ruff check .` limpio (2026-10-14). Checklist en `docs/roadmap/13_pwa_offline.md`:
+  - [x] ~~`pytest -q` y `ruff check .`~~ (2026-10-14) — 315 passed, ruff limpio
+  - [ ] Probar en el navegador: instalar, cortar conexión (DevTools), confirmar que Órdenes/Pacientes visitados abren igual y que login/panel no cambiaron
 - [ ] **Cargar precios reales** en la lista GENERAL (Catálogo → Precios) y la tasa del día
 - [ ] **Crear lote de tromboplastina vigente en demo_uno** - sólo cuando se pruebe PT/INR; Catálogo → Tablas auxiliares → Lotes de reactivos, con su ISI (sin él el INR queda vacío)
 - [ ] **Revisión manual de la Fase 11** - firma/sello/título, logo, RIF; parcial → final; QR; entregar (checklist en `docs/roadmap/11_informe.md`)
@@ -11,7 +14,11 @@
 - [ ] **Revisión manual de la Fase 11d** - recorrer Tablas auxiliares, unidad de prueba creada y desactivada, entrar como técnico (checklist en `docs/roadmap/11d_tablas_auxiliares.md`)
 - [ ] **Revisión manual de la Fase 11e** - ficha, evolución y PDF de un paciente con varios resultados validados; antecedente visible al crear su orden (checklist en `docs/roadmap/11e_pacientes.md`)
 - [ ] **Unir pacientes duplicados** - p. ej. los «Sutil, Luis» de prueba en demo_uno; fase por definir
-- [ ] **Fase 12 — SuperAdmin** (no iniciar sin pedirlo)
+- [ ] **Fase 12 — SuperAdmin (código verificado, falta probar en el navegador)** - middleware de suspensión, servicios, panel sin /admin bajo `/panel/`, sin migraciones nuevas; `pytest` 311 passed y `ruff check .` limpio (2026-10-08); tu usuario ya tiene `is_superuser=True`. Checklist en `docs/roadmap/12_superadmin.md`:
+  - [x] ~~`pytest -q` y `ruff check .`~~ (2026-10-08) — 311 passed, ruff limpio
+  - [x] ~~Confirmar tu usuario en `public` con `is_superuser=True`~~ (2026-10-08)
+  - [ ] Probar el panel: dashboard, crear/suspender/reactivar un laboratorio DEMO de prueba, planes
+  - [ ] Borrar el laboratorio DEMO de prueba al terminar
 - [ ] **Cargar firma, sello, título y colegiatura** - de cada bioanalista (admin → Usuarios → Datos de Biolife); razón social y RIF del laboratorio
 - [ ] **Confirmar valores críticos propuestos** - con el laboratorio (ficha del examen → Valores críticos)
 - [ ] **Caja** - abonos, métodos de pago (efectivo, pago móvil, transferencia, divisas), vuelto; fase propia (ADR-024)
@@ -40,13 +47,18 @@
 - [ ] **Enviar el informe por WhatsApp/correo** - hoy se copia el enlace de verificación (ADR-027)
 - [ ] **Pantalla para que cada bioanalista suba su firma y sello** - hoy desde el admin
 
+- [ ] **Worklist por sección/examen (operación interna)** - vista para ver todas las muestras pendientes de un tipo (ej. todas las hematologías de hoy) sin importar la orden/paciente, para procesarlas en lote; distinta del informe al paciente (que sigue por orden). El modelo ya está listo (`Test.section`, Fase 05): es un query nuevo, no un cambio de modelo. Encaja con la Fase 16 (gateway de instrumentos), anotado 2026-10-08
 - [ ] **Privacidad antes de producción (Fase 17)** - sacar `docs/`, `TASKS.md` y `CLAUDE.md` de git (`git rm -r --cached` + `.gitignore`), repo privado, cambiar las menciones a Angelus en comentarios de `apps/catalog`; evaluar limpiar el historial
 - [ ] **Automatizar creación del tenant `public` + dominio** - como parte del script de despliegue (Fase 17), ver ADR-009
 - [ ] **Mecanismo Master*+copia al aprovisionar tenant** - pospuesto en Fase 05 (ADR-015), retomar cuando haya un segundo laboratorio real
 - [ ] **Sembrar rangos de los nuevos calculados** (CHCM, globulinas, LDL, VLDL, Castelli, INR) - valores en 04_HALLAZGOS §1-2, cuando la Fase 10 los use
 - [ ] **Tasa BCV automática y perfiles anidados** - posteriores, ADR-019
+- [ ] **Pantalla propia para editar `Plan.features` (JSON)** - pospuesto en Fase 12, hoy se edita desde `/admin/`
+- [ ] **MRR multimoneda** - `platform_metrics()` (Fase 12) suma `price_monthly` asumiendo USD; revisar si se agregan planes en otra moneda
 
 ## Done
+
+- [x] ~~Fase 14 — Escritura offline y sincronización~~ (2026-10-14) — cola idempotente por `client_mutation_id`, cálculo clínico sólo en el servidor, resultado validado nunca sobrescrito, numeración por bloques por dispositivo, cliente con Dexie sin build, pantalla de *Sincronización* (ADR-033/034); 350 passed, ruff limpio, migraciones aplicadas y prueba offline completa en el navegador. Falta el commit.
 
 - [x] ~~Fase 11e — Pacientes: ficha, antecedentes y evolución~~ (2026-09-28) — lista, ficha, representantes, antecedentes, evolución con gráfico SVG, tendencias, PDF (ADR-032); 298 passed; commit `518ba38`
 

@@ -23,7 +23,9 @@
       <div class="card__head"><h2>{% icon "test-tube" %} Tubos</h2>
         <span class="muted small">en orden de extracción · {{ pending }} por tomar</span><span class="spacer"></span>
         {% if pending and can_collect %}
-        <form method="post" action="{% url 'orders:collect' order.pk %}">{% csrf_token %}
+        {# data-offline (Fase 14): sin conexión esto se encola, una mutación por tubo. #}
+        <form method="post" action="{% url 'orders:collect' order.pk %}" data-offline="MUESTRA_TOMADA"
+              data-offline-samples="{% for s in active_samples %}{% if s.status == 'PENDIENTE' %}{{ s.pk }},{% endif %}{% endfor %}">{% csrf_token %}
           <button class="btn btn--sm">{% icon "check" %} Marcar todas tomadas</button></form>
         {% endif %}
       </div>
@@ -44,12 +46,13 @@
             <a class="btn btn--sm btn--ghost" href="{% url 'orders:labels' order.pk %}?muestra={{ s.pk }}" target="_blank" rel="noopener" title="Imprimir esta etiqueta">{% icon "printer" %}</a>
             {% endif %}
             {% if can_collect and s.status == "PENDIENTE" %}
-            <form method="post" action="{% url 'orders:collect' order.pk %}">{% csrf_token %}<input type="hidden" name="muestra" value="{{ s.pk }}">
+            <form method="post" action="{% url 'orders:collect' order.pk %}" data-offline="MUESTRA_TOMADA">{% csrf_token %}<input type="hidden" name="muestra" value="{{ s.pk }}">
               <button class="btn btn--sm">{% icon "check" %} Tomada</button></form>
             {% endif %}
             {% if editable and s.status != "RECHAZADA" %}
             <button type="button" class="btn btn--sm btn--ghost" @click="rejecting = !rejecting" x-show="!rejecting">Rechazar</button>
-            <form method="post" action="{% url 'orders:reject' order.pk s.pk %}" class="inline-form" x-show="rejecting" x-cloak>{% csrf_token %}
+            <form method="post" action="{% url 'orders:reject' order.pk s.pk %}" class="inline-form" x-show="rejecting" x-cloak
+                  data-offline="MUESTRA_RECHAZADA" data-offline-sample="{{ s.pk }}">{% csrf_token %}
               <input name="reason" placeholder="Motivo (hemólisis, insuficiente…)" required>
               <button class="btn btn--sm btn--danger">Rechazar</button>
               <button type="button" class="btn btn--sm btn--ghost" @click="rejecting = false" aria-label="Cancelar">{% icon "x" %}</button>
@@ -104,7 +107,7 @@
         {% if order.pricing_pending %}
         <div class="alert alert--warn">{% icon "triangle-alert" %}<span>Monto pendiente: faltaban precios ({{ order.quote_snapshot.missing_prices|join:", " }}).</span></div>
         {% if not order.is_cancelled %}
-        <form method="post" action="{% url 'orders:requote' order.pk %}">{% csrf_token %}<button class="btn" style="width:100%">{% icon "rotate-ccw" %} Recotizar con los precios actuales</button></form>
+        <form method="post" action="{% url 'orders:requote' order.pk %}">{% csrf_token %}<button class="btn" style="width:100%" data-online-only>{% icon "rotate-ccw" %} Recotizar con los precios actuales</button></form>
         <p class="muted small" style="margin:0">Cargue antes el precio en Configuración → Precios.</p>
         {% endif %}
         {% else %}
@@ -118,7 +121,7 @@
         {% endif %}
         {% if order.is_paid %}<p class="muted small">Cobrada {{ order.paid_at|date:"d/m/Y h:i A" }} por {{ order.paid_by|default:"—" }}.</p>
         {% elif not order.is_cancelled and not order.pricing_pending %}
-        <form method="post" action="{% url 'orders:pay' order.pk %}">{% csrf_token %}<button class="btn" style="width:100%">{% icon "check" %} Marcar como pagada</button></form>
+        <form method="post" action="{% url 'orders:pay' order.pk %}">{% csrf_token %}<button class="btn" style="width:100%" data-online-only>{% icon "check" %} Marcar como pagada</button></form>
         {% endif %}
       </div>
     </section>
@@ -141,7 +144,7 @@
           <button type="button" class="btn btn--sm btn--danger" @click="open = true" x-show="!open">{% icon "ban" %} Anular orden</button>
           <form method="post" action="{% url 'orders:cancel' order.pk %}" class="inline-form" x-show="open" x-cloak>{% csrf_token %}
             <input name="reason" placeholder="Motivo de la anulación" required>
-            <button class="btn btn--sm btn--danger">Anular</button>
+            <button class="btn btn--sm btn--danger" data-online-only>Anular</button>
             <button type="button" class="btn btn--sm btn--ghost" @click="open = false" aria-label="Cancelar">{% icon "x" %}</button>
           </form>
         </div>

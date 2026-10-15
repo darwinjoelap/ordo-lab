@@ -22,7 +22,7 @@
     <div class="field" style="width:90px">{{ clinical_form.weight_kg.label_tag }}{{ clinical_form.weight_kg }}</div>
     <div class="field" style="width:90px">{{ clinical_form.height_cm.label_tag }}{{ clinical_form.height_cm }}</div>
     <div class="field" style="width:120px">{{ clinical_form.urine_volume_24h_ml.label_tag }}{{ clinical_form.urine_volume_24h_ml }}</div>
-    <button class="btn">{% icon "rotate-ccw" %} Actualizar datos</button>
+    <button class="btn" data-online-only>{% icon "rotate-ccw" %} Actualizar datos</button>
   </form>
   {% if sheet.context.isi or sheet.context.lote_tromboplastina %}
   <div class="card__body muted small" style="padding-top:0">INR con ISI {{ sheet.context.isi|floatformat:"3"|default:"—" }} · lote de tromboplastina {{ sheet.context.lote_tromboplastina }}</div>
@@ -41,13 +41,19 @@
     <input name="notified_to" placeholder="Notificado a (médico, paciente…)" required style="width:240px">
     <select name="method" style="width:170px">{% for v, l in notice_form.method.field.choices %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>
     <input name="notes" placeholder="Notas" style="width:200px">
-    <button class="btn btn--danger">{% icon "check" %} Registrar aviso</button>
+    <button class="btn btn--danger" data-online-only>{% icon "check" %} Registrar aviso</button>
   </form>
 </section>
 {% endif %}{% endfor %}{% endfor %}
 
+{# data-offline (Fase 14): sin conexión lo escrito se encola en crudo y el servidor
+   calcula, resuelve rangos y marca al sincronizar. `offline-versions` lleva la versión
+   que tenía cada resultado al abrir la pantalla: si otro usuario lo cambió mientras
+   tanto, el servidor lo registra como conflicto en vez de pisarlo. #}
 <form method="post" id="capture-form" novalidate hx-post="{% url 'results:live' order.pk %}"
-      hx-trigger="input delay:450ms, change" hx-swap="none" hx-sync="this:replace">
+      hx-trigger="input delay:450ms, change" hx-swap="none" hx-sync="this:replace"
+      data-offline="RESULTADO_CAPTURADO" data-offline-order="{{ order.pk }}"
+      data-offline-versions='{ {% for b in sheet.blocks %}"{{ b.result.pk }}": {{ b.result.sync_version }}{% if not forloop.last %}, {% endif %}{% endfor %} }'>
   {% csrf_token %}
   <div class="stack">
   {% for block in sheet.blocks %}
@@ -139,7 +145,7 @@
     <span class="hint kbd">Enter</span><span class="hint muted small">siguiente campo · el cálculo y las marcas se actualizan al escribir</span>
     <span class="spacer"></span>
     <button class="btn btn--primary" type="submit">{% icon "save" %} Guardar</button>
-    {% if can_validate %}<button class="btn" type="submit" formaction="{% url 'results:validate' order.pk %}">{% icon "shield-check" %} Validar lo cargado</button>{% endif %}
+    {% if can_validate %}<button class="btn" type="submit" data-online-only formaction="{% url 'results:validate' order.pk %}">{% icon "shield-check" %} Validar lo cargado</button>{% endif %}
   </div>
 </form>
 <script>

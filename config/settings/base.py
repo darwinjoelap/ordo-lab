@@ -26,6 +26,9 @@ DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
 MIDDLEWARE = [
     "django_tenants.middleware.main.TenantMainMiddleware",   # PRIMERO, sin excepción
     "apps.settings_lab.middleware.TenantTimezoneMiddleware",
+    # Fase 12: bloquea TODO en un laboratorio SUSPENDIDO/MOROSO/CANCELADO, incluso el
+    # login, con un aviso fijo. Nunca afecta al esquema public (panel de plataforma).
+    "apps.tenants.middleware.TenantAccessMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -68,6 +71,7 @@ TENANT_APPS = [
     "apps.orders",
     "apps.results",
     "apps.reports",
+    "apps.sync",
 ]
 
 INSTALLED_APPS = list(SHARED_APPS) + [

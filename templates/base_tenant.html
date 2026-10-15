@@ -4,11 +4,31 @@
 Estructura de toda pantalla del laboratorio (Fase 08d, ADR-022): barra lateral colapsable,
 barra superior con título/acciones y contenido. Bloques: title, page_title, crumbs,
 page_actions, content. Los módulos que aún no existen se muestran como "Pronto".
+
+Fase 13 (PWA base y modo lectura offline): registra el service worker y enlaza el
+manifest sólo para las pantallas del laboratorio (no para el panel de plataforma ni
+para el login), muestra un aviso cuando no hay conexión, y mete el botón "Instalar
+app" dentro del popover del avatar — a propósito poco visible — en vez de un botón
+suelto en la barra.
 {% endcomment %}
 {% block title %}{% block page_title_text %}Inicio{% endblock %} · {{ request.tenant.name }}{% endblock %}
+{% block extra_head %}
+<link rel="manifest" href="{% url 'core:manifest' %}">
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("{% url 'core:service-worker' %}");
+    });
+  }
+</script>
+{# Escritura offline (Fase 14): Dexie como vendor, sin build, igual que htmx y Alpine. #}
+<script src="{% static 'vendor/dexie-4.0.11.min.js' %}" defer></script>
+<script src="{% static 'js/sync.js' %}" defer></script>
+{% endblock %}
 {% block body %}
-<div class="app" x-data="{ collapsed: localStorage.getItem('bl-sidebar') === '1', mobile: false }"
-     :class="{ 'is-collapsed': collapsed, 'is-mobile-open': mobile }" @keydown.escape.window="mobile = false">
+<div class="app" x-data="{ collapsed: localStorage.getItem('bl-sidebar') === '1', mobile: false, online: navigator.onLine }"
+     :class="{ 'is-collapsed': collapsed, 'is-mobile-open': mobile }" @keydown.escape.window="mobile = false"
+     @online.window="online = true" @offline.window="online = false">
   <aside class="sidebar" aria-label="Navegación principal">
     <a class="sidebar__brand" href="{% url 'tenant-home' %}" title="Biolife">
       <img src="{% static 'img/brand/biolife-mark-96.png' %}" alt="">
@@ -22,6 +42,7 @@ page_actions, content. Los módulos que aún no existen se muestran como "Pronto
       <a class="nav__item {% if '/ordenes/' in request.path and '/ordenes/nueva/' not in request.path and request.GET.pendientes != '1' %}is-active{% endif %}" href="{% url 'orders:list' %}">{% icon "clipboard-list" %}<span>Órdenes</span></a>{% elif can.orders %}<a class="nav__item {% if '/ordenes/' in request.path and request.GET.pendientes != '1' %}is-active{% endif %}" href="{% url 'orders:list' %}">{% icon "clipboard-list" %}<span>Órdenes</span></a>{% endif %}
       {% if can.collection or can.orders %}<a class="nav__item {% if request.GET.pendientes == '1' or can.only_collection and '/ordenes/' in request.path %}is-active{% endif %}" href="{% url 'orders:list' %}?pendientes=1">{% icon "test-tube" %}<span>Muestras por tomar</span></a>{% endif %}
       {% if can.orders %}<a class="nav__item {% nav_active request '/pacientes/' %}" href="{% url 'patients:list' %}">{% icon "users" %}<span>Pacientes</span></a>{% endif %}
+      {% if can.orders or can.collection %}<a class="nav__item {% nav_active request '/sincronizacion/' %}" href="{% url 'sync:panel' %}">{% icon "rotate-ccw" %}<span>Sincronización</span><span class="tag tag--warn" data-sync-review hidden></span></a>{% endif %}
       {% if can.results %}<a class="nav__item {% nav_active request '/resultados/' %}" href="{% url 'results:worklist' %}">{% icon "flask-conical" %}<span>Resultados</span></a>{% endif %}
       {% if can.reports %}<a class="nav__item {% nav_active request '/informes/' %}" href="{% url 'reports:worklist' %}">{% icon "file-text" %}<span>Informes</span></a>{% endif %}
       {% if can.admin %}
@@ -42,21 +63,40 @@ page_actions, content. Los módulos que aún no existen se muestran como "Pronto
       <a class="nav__item {% nav_active request '/estilo/' %}" href="{% url 'core:style-guide' %}">{% icon "palette" %}<span>Guía de estilo</span></a>
       {% endif %}
     </nav>
-    <div class="sidebar__foot">
-      <span class="avatar" title="{{ user.get_full_name|default:user.username }}">{{ user|initials }}</span>
-      <a class="who" href="{% url 'accounts:profile' %}" title="Mi perfil" style="color:inherit;text-decoration:none">
+    <div class="sidebar__foot" x-data="{ open: false, canInstall: false, deferredPrompt: null }"
+         x-init="window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; canInstall = true; })"
+         @click.outside="open = false" @keydown.escape.window="open = false">
+      <button type="button" class="avatar avatar--btn" @click="open = !open" aria-haspopup="true" :aria-expanded="open.toString()" title="{{ user.get_full_name|default:user.username }}">{{ user|initials }}</button>
+      <span class="who">
         <strong>{{ user.get_full_name|default:user.username }}</strong>
-        <small>Mi perfil</small>
-      </a>
-      <form method="post" action="{% url 'accounts:logout' %}" class="who" style="margin-left:auto">
-        {% csrf_token %}
-        <button class="btn btn--ghost btn--icon" title="Cerrar sesión" aria-label="Cerrar sesión">{% icon "log-out" %}</button>
-      </form>
+        <small>{{ request.tenant.name }}</small>
+      </span>
+      <div class="popover popover--up" x-show="open" x-cloak x-transition.duration.120ms role="menu">
+        <a class="popover__item" href="{% url 'accounts:profile' %}" role="menuitem">{% icon "user" %}<span>Mi perfil</span></a>
+        <button type="button" class="popover__item" x-show="canInstall" x-cloak role="menuitem"
+                @click="open = false; deferredPrompt && deferredPrompt.prompt()">
+          {% icon "download" %}<span>Instalar app</span>
+        </button>
+        <form method="post" action="{% url 'accounts:logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="popover__item" role="menuitem">{% icon "log-out" %}<span>Cerrar sesión</span></button>
+        </form>
+      </div>
     </div>
   </aside>
 
   <div class="backdrop only-mobile" x-show="mobile" x-cloak @click="mobile = false"></div>
   <div class="main">
+    <div class="offline-banner" x-show="!online" x-cloak role="status">
+      {% icon "triangle-alert" %}<span>Sin conexión — mostrando lo último guardado en este dispositivo.</span>
+      <span class="tag tag--warn" data-sync-count hidden></span>
+      <span class="muted small" data-sync-count hidden>por enviar</span>
+    </div>
+    {# Avisos de la cola offline (Fase 14): lo llena static/js/sync.js. #}
+    <div id="bl-sync-toast" class="offline-banner" role="status" hidden></div>
+    <div id="bl-sync" hidden
+         data-mutations-url="{% url 'sync:mutations' %}"
+         data-status-url="{% url 'sync:status' %}"></div>
     <header class="topbar">
       <button class="btn btn--ghost btn--icon only-mobile" @click="mobile = !mobile" aria-label="Menú">{% icon "menu" %}</button>
       <button class="btn btn--ghost btn--icon only-desktop" @click="collapsed = !collapsed; localStorage.setItem('bl-sidebar', collapsed ? '1' : '0')" aria-label="Contraer menú" title="Contraer menú">{% icon "panel-left" %}</button>

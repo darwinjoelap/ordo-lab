@@ -118,6 +118,13 @@ class Order(TenantBaseModel):
     cancel_reason = models.CharField("Motivo de anulación", max_length=255, blank=True,
                                      default="")
 
+    # Sincronización offline (Fase 14). `client_mutation_id` es el id de la mutación que
+    # creó esta orden sin conexión: único, así reenviar la cola nunca crea dos órdenes.
+    # Vacío en las órdenes registradas en línea.
+    client_mutation_id = models.UUIDField("Id de la mutación offline", null=True,
+                                           blank=True, unique=True)
+    sync_version = models.PositiveIntegerField("Versión de sincronización", default=1)
+
     class Meta:
         verbose_name = "Orden"
         verbose_name_plural = "Órdenes"
