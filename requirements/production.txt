@@ -1,2 +1,11 @@
 -r base.txt
-sentry-sdk==2.*
+
+# Errores en producción (config/settings/production.py ya lo importaba desde la Fase 01,
+# pero nunca estuvo instalado: sin esto el despliegue arranca y muere en el import).
+sentry-sdk==2.72.*
+
+# Media en Cloudinary (ADR-022 lo dejó pendiente para esta fase). El disco de Railway es
+# efímero: sin esto, las firmas, sellos y logos subidos desaparecen en cada despliegue, y
+# los informes saldrían sin firma.
+cloudinary==1.46.*
+django-cloudinary-storage==0.3.*
