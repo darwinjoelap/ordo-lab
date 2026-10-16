@@ -41,3 +41,8 @@ static/dist/
 # Archivos de trabajo de sesiones con Claude
 Claude outputs/
 commit_msg.txt
+
+# Documentación interna y notas de trabajo (no se publican)
+docs/
+TASKS.md
+CLAUDE.md
