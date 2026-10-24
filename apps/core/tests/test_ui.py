@@ -15,9 +15,14 @@ class PantallasBaseTests(TenantTestCase):
         )
         self.tecnico = User.objects.create_user(username="tec", password="x")
 
-    def test_login_muestra_la_marca(self):
+    def test_login_muestra_la_marca_y_el_laboratorio(self):
+        """La pantalla partida: la marca del producto a un lado y, al otro, a qué
+        laboratorio se está entrando. Sobre el panel azul marino va la variante
+        blanca del símbolo, no la de color (el anillo marino desaparecería)."""
         body = self.client.get("/cuenta/login/").content.decode()
-        assert "ordolab-mark-96.png" in body and "css/ordolab.css" in body
+        assert "ordolab-mark-white.png" in body
+        assert "css/ordolab.css" in body
+        assert self.tenant.name in body
 
     def test_inicio_exige_sesion(self):
         response = self.client.get("/")

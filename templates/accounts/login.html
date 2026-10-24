@@ -1,32 +1,59 @@
-{% extends "base_auth.html" %}
+{% extends "base.html" %}
+{% comment %}
+Acceso al laboratorio. No usa base_auth.html (tarjeta centrada) sino una pantalla
+partida en dos, igual que Ordo Salud: a la izquierda la marca del producto, a la
+derecha el laboratorio al que se está entrando. Las demás pantallas sin sesión
+—recuperar contraseña, verificación pública— siguen con base_auth.
+{% endcomment %}
 {% load static ui %}
 
 {% block title %}Iniciar sesión · {{ request.tenant.name }}{% endblock %}
 
-{% block content %}
-<div class="auth__logo">
-  <img src="{% static 'img/brand/ordolab-mark-96.png' %}" alt="Ordo Lab">
-  <span class="wordmark"><b>Ordo</b> <span>Lab</span></span>
-  <span class="muted small">{{ request.tenant.name }}</span>
-</div>
+{% block body %}
+<main class="login">
+  <section class="login__marca" aria-label="Ordo Lab">
+    <img class="login__fondo" src="{% static 'img/brand/ordolab-mark-white.png' %}" alt="" aria-hidden="true">
+    <div class="login__logo">
+      <img src="{% static 'img/brand/ordolab-mark-white.png' %}" alt="">
+      <span class="wordmark wordmark--inv"><b>Ordo</b> <span>Lab</span></span>
+    </div>
+    <div class="login__texto">
+      <p class="login__lema">Tu laboratorio, en orden.</p>
+      <p class="login__detalle">Recepción, tubos, resultados validados e informes firmados
+        con código de verificación. Instálalo en el teléfono y sigue trabajando aunque se
+        caiga la conexión.</p>
+    </div>
+  </section>
 
-{% if form.errors %}
-<div class="alert alert--danger" role="alert">{% icon "triangle-alert" %}<span>Usuario o contraseña incorrectos.</span></div>
-{% endif %}
+  <section class="login__formulario">
+    <div class="card login__caja">
+      <div class="login__cabecera">
+        <div class="eyebrow">Laboratorio</div>
+        <h1>{{ request.tenant.name }}</h1>
+        <p class="muted small">Entre con su usuario de este laboratorio.</p>
+      </div>
 
-<form method="post" novalidate>
-  {% csrf_token %}
-  <div class="field">
-    <label for="id_username">Usuario</label>
-    <input type="text" name="username" id="id_username" autocomplete="username" autofocus required
-           value="{{ form.username.value|default:'' }}">
-  </div>
-  <div class="field">
-    <label for="id_password">Contraseña</label>
-    <input type="password" name="password" id="id_password" autocomplete="current-password" required>
-  </div>
-  <input type="hidden" name="next" value="{{ next }}">
-  <button type="submit" class="btn btn--primary">Entrar</button>
-</form>
-<p class="auth__foot">Ordo Lab · Sistema de gestión de laboratorio</p>
+      {% if form.errors %}
+      <div class="alert alert--danger" role="alert">{% icon "triangle-alert" %}<span>Usuario o contraseña incorrectos.</span></div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="field">
+          <label for="id_username">Usuario</label>
+          <input type="text" name="username" id="id_username" autocomplete="username" autofocus required
+                 value="{{ form.username.value|default:'' }}">
+        </div>
+        <div class="field">
+          <label for="id_password">Contraseña</label>
+          <input type="password" name="password" id="id_password" autocomplete="current-password" required>
+        </div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="btn btn--primary">Entrar</button>
+      </form>
+
+      <p class="auth__foot">¿Olvidó su contraseña? Pídala al administrador del laboratorio.</p>
+    </div>
+  </section>
+</main>
 {% endblock %}

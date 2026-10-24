@@ -427,6 +427,62 @@ input[readonly], input:disabled, select:disabled { background: var(--surface-2);
 .auth .btn { width: 100%; height: 36px; }
 .auth__foot { margin-top: var(--s5); text-align: center; font-size: var(--fs-xs); color: var(--muted); }
 
+/* ---------- Pantalla de acceso partida (login) ----------
+   Dos mitades: la marca del producto sobre azul marino y, al lado, el laboratorio
+   al que se entra. Mismo esqueleto que Ordo Salud, para que la familia se reconozca.
+   En móvil la marca se reduce a una franja y el detalle se oculta: lo que importa
+   ahí es el formulario. */
+.login { min-height: 100vh; min-height: 100dvh; display: flex; flex-wrap: wrap;
+         background: var(--canvas); }
+
+.login__marca {
+  position: relative; overflow: hidden;
+  flex: 1 1 420px;
+  display: flex; flex-direction: column; justify-content: space-between; gap: var(--s8);
+  padding: max(var(--s8), env(safe-area-inset-top)) var(--s8) var(--s8);
+  background: var(--ol-navy); color: #fff;
+}
+/* Marca de agua: el símbolo enorme, apenas visible, saliéndose por la esquina. */
+.login__fondo { position: absolute; right: -140px; bottom: -140px;
+                width: 520px; height: 520px; opacity: .06; pointer-events: none; }
+.login__logo { position: relative; display: flex; align-items: center; gap: var(--s3); }
+.login__logo img { width: 52px; height: 52px; }
+.login__texto { position: relative; display: grid; gap: var(--s3); }
+.login__lema { margin: 0; font-size: 34px; line-height: 1.15; font-weight: 700;
+               letter-spacing: -0.02em; max-width: 18ch; }
+.login__detalle { margin: 0; max-width: 46ch; line-height: 1.6;
+                  color: color-mix(in srgb, #fff 78%, var(--ol-navy)); }
+
+.login__formulario {
+  flex: 1 1 420px; display: flex; align-items: center; justify-content: center;
+  padding: var(--s8) var(--s5) max(var(--s8), env(safe-area-inset-bottom));
+}
+.login__caja { width: min(400px, 100%); padding: var(--s8) var(--s6) var(--s6); }
+.login__cabecera { margin-bottom: var(--s6); }
+.login__cabecera h1 { margin: 2px 0 4px; font-size: var(--fs-xl); line-height: 1.2;
+                      color: var(--ink); }
+.login .field + .field { margin-top: var(--s3); }
+.login form { display: grid; gap: var(--s3); }
+.login .btn { width: 100%; height: 38px; }
+
+.eyebrow { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .14em;
+           text-transform: uppercase; color: var(--ol-teal-700); }
+
+/* El logotipo sobre fondo oscuro invierte sus dos colores. */
+.wordmark--inv b { color: #fff; }
+.wordmark--inv > span { color: color-mix(in srgb, #fff 72%, var(--ol-navy)); }
+
+@media (max-width: 760px) {
+  .login__marca { flex-basis: 100%; gap: var(--s4);
+                  padding: max(var(--s5), env(safe-area-inset-top)) var(--s5) var(--s5); }
+  .login__logo img { width: 40px; height: 40px; }
+  .login__lema { font-size: 22px; }
+  .login__detalle { display: none; }
+  .login__fondo { right: -180px; bottom: -200px; opacity: .05; }
+  .login__formulario { align-items: flex-start; padding-top: var(--s5); }
+  .login__caja { padding: var(--s6) var(--s5) var(--s5); }
+}
+
 /* ---------- Adaptación a pantallas pequeñas ---------- */
 @media (max-width: 1100px) {
   .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
