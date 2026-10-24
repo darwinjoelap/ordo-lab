@@ -1,5 +1,5 @@
 """
-Configuración base de Biolife. Compartida por local, staging y production.
+Configuración base de Ordo Lab. Compartida por local, staging y production.
 No se ejecuta directamente: cada entorno la importa con `from .base import *`.
 """
 from pathlib import Path

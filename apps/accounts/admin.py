@@ -10,9 +10,9 @@ class MembershipInline(admin.TabularInline):
 
 
 @admin.register(User)
-class BiolifeUserAdmin(UserAdmin):
+class OrdoLabUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
-        ("Datos de Biolife", {"fields": ("phone", "professional_title", "professional_license",
+        ("Datos de Ordo Lab", {"fields": ("phone", "professional_title", "professional_license",
                                          "signature_image", "stamp_image")}),
     )
     inlines = [MembershipInline]

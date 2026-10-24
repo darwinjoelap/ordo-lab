@@ -3,15 +3,15 @@
 {% comment %}
 Estructura del panel de plataforma (Fase 12): mismo esqueleto visual que
 base_tenant.html, sin marca ni navegación de laboratorio — esto no es el sistema de
-un laboratorio, es el panel interno de Biolife.
+un laboratorio, es el panel interno de Ordo Lab.
 {% endcomment %}
-{% block title %}{% block page_title_text %}Panel{% endblock %} · Biolife{% endblock %}
+{% block title %}{% block page_title_text %}Panel{% endblock %} · Ordo Lab{% endblock %}
 {% block body %}
 <div class="app">
   <aside class="sidebar" aria-label="Navegación de la plataforma">
-    <a class="sidebar__brand" href="{% url 'tenants:dashboard' %}" title="Biolife">
-      <img src="{% static 'img/brand/biolife-mark-96.png' %}" alt="">
-      <span class="wordmark"><b>Bio</b><span>life</span></span>
+    <a class="sidebar__brand" href="{% url 'tenants:dashboard' %}" title="Ordo Lab">
+      <img src="{% static 'img/brand/ordolab-mark-96.png' %}" alt="">
+      <span class="wordmark"><b>Ordo</b><span>Lab</span></span>
     </a>
     <div class="sidebar__tenant">Panel de plataforma</div>
     <nav class="nav">
@@ -21,7 +21,7 @@ un laboratorio, es el panel interno de Biolife.
     </nav>
     <div class="sidebar__foot">
       <span class="avatar" title="{{ user.get_full_name|default:user.username }}">{{ user|initials }}</span>
-      <span class="who"><strong>{{ user.get_full_name|default:user.username }}</strong><small>Equipo Biolife</small></span>
+      <span class="who"><strong>{{ user.get_full_name|default:user.username }}</strong><small>Equipo Ordo Lab</small></span>
       <form method="post" action="{% url 'accounts:logout' %}" class="who" style="margin-left:auto">
         {% csrf_token %}
         <button class="btn btn--ghost btn--icon" title="Cerrar sesión" aria-label="Cerrar sesión">{% icon "log-out" %}</button>

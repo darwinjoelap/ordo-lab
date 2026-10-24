@@ -5,8 +5,8 @@
 
 {% block content %}
 <div class="auth__logo">
-  <img src="{% static 'img/brand/biolife-mark-96.png' %}" alt="Biolife">
-  <span class="wordmark"><b>Bio</b><span>life</span></span>
+  <img src="{% static 'img/brand/ordolab-mark-96.png' %}" alt="Ordo Lab">
+  <span class="wordmark"><b>Ordo</b><span>Lab</span></span>
   <span class="muted small">{{ request.tenant.name }}</span>
 </div>
 
@@ -28,5 +28,5 @@
   <input type="hidden" name="next" value="{{ next }}">
   <button type="submit" class="btn btn--primary">Entrar</button>
 </form>
-<p class="auth__foot">Biolife · Sistema de gestión de laboratorio</p>
+<p class="auth__foot">Ordo Lab · Sistema de gestión de laboratorio</p>
 {% endblock %}

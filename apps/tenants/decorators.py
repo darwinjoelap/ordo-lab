@@ -19,7 +19,7 @@ def platform_required(view_func):
     @wraps(view_func)
     def _checked(request, *args, **kwargs):
         if not request.user.is_superuser:
-            raise PermissionDenied("Sólo el equipo de Biolife puede entrar aquí.")
+            raise PermissionDenied("Sólo el equipo de Ordo Lab puede entrar aquí.")
         return view_func(request, *args, **kwargs)
 
     return login_required(_checked)

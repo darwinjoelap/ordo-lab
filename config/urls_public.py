@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 
-# TODO(futuro): landing pública de Biolife en "" — hoy el panel de plataforma vive en
+# TODO(futuro): landing pública de Ordo Lab en "" — hoy el panel de plataforma vive en
 # /panel/ (Fase 12) para dejar la raíz libre para esa landing.
 
 urlpatterns = [

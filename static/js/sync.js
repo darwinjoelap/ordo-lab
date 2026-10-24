@@ -23,7 +23,7 @@
   var TTL_MS = 24 * 60 * 60 * 1000; // 24 h (00_ARQUITECTURA §5)
   var RETRY_MS = 60000;
 
-  var db = new Dexie("biolife-sync");
+  var db = new Dexie("ordolab-sync");
   db.version(1).stores({
     queue: "client_mutation_id, kind, client_created_at",
     meta: "key",
@@ -314,5 +314,5 @@
   }, RETRY_MS);
 
   // Para la consola y para la pantalla de Sincronización.
-  window.biolifeSync = { enqueue: enqueue, flush: flush, pending: pendingCount };
+  window.ordoLabSync = { enqueue: enqueue, flush: flush, pending: pendingCount };
 })();

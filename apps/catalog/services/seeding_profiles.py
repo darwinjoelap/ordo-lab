@@ -1,8 +1,8 @@
 """Siembra de perfiles (Fase 08).
 
 Composición leída de `Perfiles.xlsx` y `Formato_de_resultados - Angelus.xlsx` (una hoja
-por perfil), laboratorio de referencia (ADR-018). Ajustes de Biolife marcados en
-`description` con "Agregado por Biolife" (ADR-019).
+por perfil), laboratorio de referencia (ADR-018). Ajustes de Ordo Lab marcados en
+`description` con "Agregado por Ordo Lab" (ADR-019).
 
 Idempotente y no destructiva: si el perfil ya existe, **no** se toca su composición (el
 tenant puede haberla editado). Sólo se crea lo que falta.
@@ -42,7 +42,7 @@ PROFILES: list[tuple[str, str, list[str], str]] = [
         HC, "PT", "PTT", "FIBRINOGENO", "GLICEMIA", "UREA", "CREATININA",
         "COLESTEROL_TOTAL", "TRIGLICERIDOS", "ACIDO_URICO", "PROTEINAS_TOTALES", "TGO",
         "TGP", "LDH", "URO",
-    ], "Hoja 'P. PRECLAMPTICO'. Agregado por Biolife: UROANÁLISIS (la proteinuria es "
+    ], "Hoja 'P. PRECLAMPTICO'. Agregado por Ordo Lab: UROANÁLISIS (la proteinuria es "
        "criterio diagnóstico de preeclampsia y la hoja no lo incluye)."),
     ("PERFIL_PEDIATRICO", "PERFIL PEDIÁTRICO", [HC, "VSG", "PCR"],
      "Hoja 'P. PEDIÁTRICO'. Los rangos pediátricos/neonatales siguen sin confirmar."),
@@ -60,7 +60,7 @@ PROFILES: list[tuple[str, str, list[str], str]] = [
     ("HC_ORINA", "HEMATOLOGÍA + ORINA", [HC, "URO"], "Hoja 'HC+ORINA'."),
     ("PERFIL_PRENATAL", "PERFIL PRENATAL", [
         HC, "GRUPO_SANGUINEO", "GLICEMIA", "URO", "VDRL", "HIV", "HEPATITIS_B_HBSAG", "TORCH",
-    ], "Agregado por Biolife: control prenatal habitual; no existe en las hojas."),
+    ], "Agregado por Ordo Lab: control prenatal habitual; no existe en las hojas."),
 ]
 
 # Los perfiles que corresponden a hojas de los Excel (criterio de salida de la Fase 08).

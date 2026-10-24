@@ -17,7 +17,7 @@ class PantallasBaseTests(TenantTestCase):
 
     def test_login_muestra_la_marca(self):
         body = self.client.get("/cuenta/login/").content.decode()
-        assert "biolife-mark-96.png" in body and "css/biolife.css" in body
+        assert "ordolab-mark-96.png" in body and "css/ordolab.css" in body
 
     def test_inicio_exige_sesion(self):
         response = self.client.get("/")
@@ -27,7 +27,7 @@ class PantallasBaseTests(TenantTestCase):
         self.client.force_login(self.staff)
         body = self.client.get("/").content.decode()
         assert 'class="sidebar"' in body and "Hola, Ana" in body
-        assert "Guía de estilo" in body  # sólo para el staff de Biolife
+        assert "Guía de estilo" in body  # sólo para el staff de Ordo Lab
 
     def test_usuario_sin_staff_no_ve_configuracion_ni_guia(self):
         self.client.force_login(self.tecnico)

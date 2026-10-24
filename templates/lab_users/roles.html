@@ -5,7 +5,7 @@
 {% block page_title %}Roles{% endblock %}
 {% block content %}
 <section class="card">
-  <div class="card__head"><h2>{% icon "shield-check" %} Qué puede hacer cada rol</h2><span class="spacer"></span><span class="muted small">Los define Biolife; usted los asigna en <a href="{% url 'lab_users:list' %}">Usuarios</a></span></div>
+  <div class="card__head"><h2>{% icon "shield-check" %} Qué puede hacer cada rol</h2><span class="spacer"></span><span class="muted small">Los define Ordo Lab; usted los asigna en <a href="{% url 'lab_users:list' %}">Usuarios</a></span></div>
   <div class="card__body card__body--flush table-wrap">
     <table class="table roles-matrix">
       <thead><tr><th>Permiso</th>{% for r in roles %}<th class="center">{{ r.name }}</th>{% endfor %}</tr></thead>

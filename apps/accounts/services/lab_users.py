@@ -1,7 +1,7 @@
 """Usuarios del laboratorio gestionados por su administrador (Fase 11b, ADR-029).
 
 - Alta con clave temporal: el usuario debe cambiarla en su primer ingreso.
-- Los roles los define Biolife; el laboratorio sólo los asigna (uno o varios por usuario).
+- Los roles los define Ordo Lab; el laboratorio sólo los asigna (uno o varios por usuario).
 - Nunca se borra un usuario (firma informes, cargó resultados): se desactiva.
 - Siempre queda al menos un administrador activo, y nadie se quita a sí mismo el acceso.
 - Cada cambio queda en la bitácora (`AuditLog`).

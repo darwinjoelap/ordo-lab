@@ -80,18 +80,18 @@ class Subscription(models.Model):
 
 
 class PlatformSettings(models.Model):
-    """Configuración de la plataforma Biolife (esquema `public`, una sola fila). La edita
+    """Configuración de la plataforma Ordo Lab (esquema `public`, una sola fila). La edita
     el administrador del SaaS en el admin de `public`; los laboratorios no la ven.
 
     Fase 11 (ADR-027): la firma de la plataforma al pie de cada informe PDF."""
 
     report_brand_enabled = models.BooleanField(
-        "Mostrar la firma de Biolife en los informes", default=True)
+        "Mostrar la firma de Ordo Lab en los informes", default=True)
     report_brand_text = models.CharField(
         "Texto al pie del informe", max_length=160,
-        default="Generado con Biolife · Sistema de gestión para laboratorios clínicos")
+        default="Generado con Ordo Lab · Sistema de gestión para laboratorios clínicos")
     report_brand_contact = models.CharField(
-        "Contacto de Biolife (opcional)", max_length=160, blank=True, default="",
+        "Contacto de Ordo Lab (opcional)", max_length=160, blank=True, default="",
         help_text="Teléfono, Instagram o web; se imprime junto al texto.")
 
     class Meta:

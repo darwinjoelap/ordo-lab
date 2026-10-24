@@ -1,4 +1,4 @@
-{% load static %}const CACHE_VERSION = "biolife-v1";
+{% load static %}const CACHE_VERSION = "ordolab-v1";
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const PAGES_CACHE = `${CACHE_VERSION}-pages`;
 
@@ -9,7 +9,7 @@ const PAGES_CACHE = `${CACHE_VERSION}-pages`;
    se envía cuando vuelve la conexión. */
 
 const SHELL_URLS = [
-  "{% static 'css/biolife.css' %}",
+  "{% static 'css/ordolab.css' %}",
   "{% static 'vendor/htmx-2.0.11.min.js' %}",
   "{% static 'vendor/alpine-3.17.4.min.js' %}",
   // Fase 14: sin estos dos en el caché, una página abierta sin conexión no podría
@@ -17,7 +17,7 @@ const SHELL_URLS = [
   "{% static 'vendor/dexie-4.0.11.min.js' %}",
   "{% static 'js/sync.js' %}",
   "{% static 'fonts/inter-latin-wght-normal.woff2' %}",
-  "{% static 'img/brand/biolife-mark-96.png' %}",
+  "{% static 'img/brand/ordolab-mark-96.png' %}",
   "{% static 'img/brand/favicon-32.png' %}",
   "{% url 'core:offline' %}",
 ];
@@ -44,7 +44,10 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((names) =>
       Promise.all(
         names
-          .filter((name) => name.startsWith("biolife-") && !name.startsWith(CACHE_VERSION))
+          // Cualquier caché que no sea la versión actual, no sólo las del prefijo de
+          // turno: así el renombrado de Biolife a Ordo Lab no deja cachés huérfanas en
+          // los navegadores que ya tenían la aplicación instalada.
+          .filter((name) => !name.startsWith(CACHE_VERSION))
           .map((name) => caches.delete(name))
       )
     )

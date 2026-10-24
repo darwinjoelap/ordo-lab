@@ -1,15 +1,16 @@
 {% load static %}{
-  "name": "Biolife — {{ request.tenant.name }}",
-  "short_name": "Biolife",
+  "name": "Ordo Lab — {{ request.tenant.name }}",
+  "short_name": "Ordo Lab",
   "description": "Sistema de gestión para laboratorios clínicos",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0b2e63",
+  "theme_color": "#123154",
   "lang": "es-VE",
   "icons": [
-    {"src": "{% static 'img/brand/icon-192.png' %}", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-    {"src": "{% static 'img/brand/icon-512.png' %}", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+    {"src": "{% static 'img/brand/icon-192.png' %}", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "{% static 'img/brand/icon-512.png' %}", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "{% static 'img/brand/ordolab-maskable-512.png' %}", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
   ]
 }

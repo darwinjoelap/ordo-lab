@@ -13,7 +13,7 @@ se vacían (sus parámetros se mudan a los exámenes individuales) y se desactiv
 Marcas en `display_text`:
 - "(PENDIENTE DE CONFIRMAR)": las hojas traen valores contradictorios; se sembró uno.
 - "(NO CONFIRMADO)": ilustrativo, sin respaldo en las hojas.
-- "(PROPUESTO)": agregado por Biolife con criterio clínico estándar (ADR-018).
+- "(PROPUESTO)": agregado por Ordo Lab con criterio clínico estándar (ADR-018).
 Ninguno de esos rangos debe usarse en un informe real sin que el laboratorio lo revise.
 
 Idempotente: todo por `get_or_create` con claves naturales. No sobreescribe lo que el

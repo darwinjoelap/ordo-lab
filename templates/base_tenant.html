@@ -30,9 +30,9 @@ suelto en la barra.
      :class="{ 'is-collapsed': collapsed, 'is-mobile-open': mobile }" @keydown.escape.window="mobile = false"
      @online.window="online = true" @offline.window="online = false">
   <aside class="sidebar" aria-label="Navegación principal">
-    <a class="sidebar__brand" href="{% url 'tenant-home' %}" title="Biolife">
-      <img src="{% static 'img/brand/biolife-mark-96.png' %}" alt="">
-      <span class="wordmark"><b>Bio</b><span>life</span></span>
+    <a class="sidebar__brand" href="{% url 'tenant-home' %}" title="Ordo Lab">
+      <img src="{% static 'img/brand/ordolab-mark-96.png' %}" alt="">
+      <span class="wordmark"><b>Ordo</b><span>Lab</span></span>
     </a>
     <div class="sidebar__tenant" title="{{ request.tenant.name }}">{{ request.tenant.name }}</div>
     <nav class="nav">
@@ -59,7 +59,7 @@ suelto en la barra.
       <a class="nav__item {% nav_active request '/tablas/' %}" href="{% url 'core:aux-hub' %}">{% icon "table" %}<span>Tablas auxiliares</span></a>
       {% endif %}
       {% if user.is_staff %}
-      <div class="nav__group">Biolife (staff)</div>
+      <div class="nav__group">Ordo Lab (staff)</div>
       <a class="nav__item {% nav_active request '/estilo/' %}" href="{% url 'core:style-guide' %}">{% icon "palette" %}<span>Guía de estilo</span></a>
       {% endif %}
     </nav>

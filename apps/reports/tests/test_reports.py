@@ -22,7 +22,7 @@ from apps.results.services.validation import validate_results
 from apps.results.tests.test_results import ResultsTestBase
 from apps.settings_lab.models import TenantSettings
 
-MEDIA = tempfile.mkdtemp(prefix="biolife-media-")
+MEDIA = tempfile.mkdtemp(prefix="ordolab-media-")
 
 
 def png(color="navy") -> SimpleUploadedFile:
@@ -198,11 +198,11 @@ class BrandTests(ReportTestBase):
     def test_firma_de_la_plataforma_editable(self):
         from apps.tenants.models import PlatformSettings
         from apps.tenants.services.platform import report_brand
-        assert report_brand()["text"].startswith("Generado con Biolife")
+        assert report_brand()["text"].startswith("Generado con Ordo Lab")
         platform = PlatformSettings.get_solo()
-        platform.report_brand_contact = "@biolife.ve"
+        platform.report_brand_contact = "@ordolab.ve"
         platform.save()
-        assert report_brand()["contact"] == "@biolife.ve"
+        assert report_brand()["contact"] == "@ordolab.ve"
         order = self.validated_lipids()
         report, _ = emit_report(order=order, user=self.bio)
         assert render_report_pdf(report, verify_url="https://x.test/v/").startswith(b"%PDF")

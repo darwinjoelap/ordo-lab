@@ -8,14 +8,14 @@
   {% csrf_token %}
   {% if form.errors %}<div class="alert alert--danger">{% icon "triangle-alert" %}<span>Revise los campos marcados.</span></div>{% endif %}
   <section class="card">
-    <div class="card__head"><h2>{% icon "shield-check" %} Identificación legal</h2><span class="spacer"></span><span class="muted small">La cambia el administrador de Biolife</span></div>
+    <div class="card__head"><h2>{% icon "shield-check" %} Identificación legal</h2><span class="spacer"></span><span class="muted small">La cambia el administrador de Ordo Lab</span></div>
     <div class="card__body">
       <dl class="dl">
         <dt>Nombre</dt><dd>{{ tenant.name }}</dd>
         <dt>Razón social</dt><dd>{{ tenant.legal_name|default:"—" }}</dd>
         <dt>RIF</dt><dd>{{ tenant.rif|default:"—" }}</dd>
       </dl>
-      <p class="muted small" style="margin:var(--s3) 0 0">Para corregirlos, escriba a soporte de Biolife: se imprimen en cada informe.</p>
+      <p class="muted small" style="margin:var(--s3) 0 0">Para corregirlos, escriba a soporte de Ordo Lab: se imprimen en cada informe.</p>
     </div>
   </section>
   {% for title, fields in form.sections %}

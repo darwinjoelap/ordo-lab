@@ -33,7 +33,7 @@ def check_connection_pooling_mode(app_configs, **kwargs):
                 "'transaction' (puerto 6543 o una opción con 'pgbouncer' detectada). "
                 "django-tenants requiere conexión directa o pooling en modo 'session'.",
                 hint=_HINT,
-                id="biolife.W001",
+                id="ordolab.W001",
             )
         )
 

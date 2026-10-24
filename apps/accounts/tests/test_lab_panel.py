@@ -106,7 +106,7 @@ class LabPanelViewsTests(LabPanelBase):
                 settings_obj.report_link_days) == ("mi.lab", "MLB", 15)
         assert AuditLog.objects.filter(action="LABORATORIO_MODIFICADO").exists()
         html = self.client.get("/configuracion/laboratorio/").content.decode()
-        assert "La cambia el administrador de Biolife" in html
+        assert "La cambia el administrador de Ordo Lab" in html
 
     def test_matriz_de_roles(self):
         html = self.client.get("/configuracion/roles/").content.decode()

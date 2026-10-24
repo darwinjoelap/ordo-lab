@@ -1,8 +1,8 @@
 {% extends "admin/base.html" %}
 {% load static %}
-{% comment %}Admin con la identidad de Biolife (Fase 08d). Es la pantalla provisional de
+{% comment %}Admin con la identidad de Ordo Lab (Fase 08d). Es la pantalla provisional de
 configuración hasta que cada módulo tenga su pantalla propia.{% endcomment %}
-{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | Biolife{% endblock %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | Ordo Lab{% endblock %}
 {% block extrahead %}
   {{ block.super }}
   <link rel="icon" href="{% static 'img/brand/favicon.ico' %}" sizes="any">
@@ -25,7 +25,7 @@ configuración hasta que cada módulo tenga su pantalla propia.{% endcomment %}
 {% endblock %}
 {% block branding %}
 <div id="site-name">
-  <h1><a href="{% url 'admin:index' %}"><img src="{% static 'img/brand/biolife-mark-96.png' %}" alt="">Biolife{% if request.tenant %} · {{ request.tenant.name }}{% endif %}</a></h1>
+  <h1><a href="{% url 'admin:index' %}"><img src="{% static 'img/brand/ordolab-mark-96.png' %}" alt="">Ordo Lab{% if request.tenant %} · {{ request.tenant.name }}{% endif %}</a></h1>
 </div>
 {% if user.is_anonymous %}{% include "admin/color_theme_toggle.html" %}{% endif %}
 {% endblock %}
