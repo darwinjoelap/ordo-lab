@@ -120,8 +120,8 @@ def _fit(reader: ImageReader, max_w: float, max_h: float) -> tuple[float, float]
 
 
 def _brand_icon() -> str:
-    """Ruta del ícono de Biolife (del tamaño de la letra del pie)."""
-    return finders.find("img/brand/biolife-mark-96.png") or ""
+    """Ruta del ícono de Ordo Lab (del tamaño de la letra del pie)."""
+    return finders.find("img/brand/ordolab-mark-96.png") or ""
 
 
 def _hex(value: str, fallback: str = "#1B5FA8") -> colors.Color:
@@ -256,6 +256,17 @@ def _story(payload: dict) -> list:
                                  ("TOPPADDING", (0, 0), (-1, -1), 4),
                                  ("BOTTOMPADDING", (0, 0), (-1, -1), 5)]))
         story += [box, Spacer(1, 3 * mm)]
+    if payload.get("amended_tests"):
+        # Fase 15: el médico que recibe esta versión debe saber que corrige a la
+        # anterior. El motivo de la rectificación es interno y no se imprime.
+        box = Table([[Paragraph(
+            "<b>INFORME RECTIFICADO.</b> Corrige a la versión anterior en: "
+            + escape(", ".join(payload["amended_tests"])) + ".", ST["warn"])]],
+            colWidths=[BODY_W])
+        box.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), WARN_BG),
+                                 ("TOPPADDING", (0, 0), (-1, -1), 4),
+                                 ("BOTTOMPADDING", (0, 0), (-1, -1), 5)]))
+        story += [box, Spacer(1, 3 * mm)]
     for index, section in enumerate(payload["sections"]):
         if index and section.get("page_break"):
             story.append(PageBreak())
@@ -337,6 +348,8 @@ class _Decor:
         text = ""
         if not self.report.is_current:
             text = "REEMPLAZADO"
+        elif self.payload.get("amended_tests"):
+            text = "RECTIFICADO"
         elif self.report.is_partial:
             text = "PARCIAL"
         if not text:
@@ -392,14 +405,18 @@ class _Decor:
             if line:
                 canvas.drawRightString(right, y, line)
                 y -= 3.4 * mm
-        if self.report.is_partial:
-            badge_x = right - canvas.stringWidth(version, "Helvetica", 8) - 22 * mm
+        badge = ("RECTIFICADO" if self.payload.get("amended_tests")
+                 else "PARCIAL" if self.report.is_partial else "")
+        if badge:
+            width = 18 * mm if badge == "PARCIAL" else 26 * mm
+            badge_x = (right - canvas.stringWidth(version, "Helvetica", 8) - width
+                       - 4 * mm)
             canvas.setFillColor(WARN_BG)
-            canvas.roundRect(badge_x, top - 13.6 * mm, 18 * mm, 4.6 * mm, 1.2 * mm,
+            canvas.roundRect(badge_x, top - 13.6 * mm, width, 4.6 * mm, 1.2 * mm,
                              stroke=0, fill=1)
             canvas.setFillColor(WARN_INK)
             canvas.setFont("Helvetica-Bold", 7.8)
-            canvas.drawCentredString(badge_x + 9 * mm, top - 12.3 * mm, "PARCIAL")
+            canvas.drawCentredString(badge_x + width / 2, top - 12.3 * mm, badge)
 
         rule_y = PAGE_H - 34 * mm
         canvas.setStrokeColor(self.color)
@@ -511,7 +528,7 @@ class _Decor:
         self._brand(canvas)
 
     def _brand(self, canvas):
-        """Firma de la plataforma: ícono de Biolife y su texto, abajo a la izquierda."""
+        """Firma de la plataforma: ícono de Ordo Lab y su texto, abajo a la izquierda."""
         if not (self.brand.get("enabled") and self.brand.get("text")):
             return
         text = self.brand["text"]

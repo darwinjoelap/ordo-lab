@@ -12,4 +12,6 @@ urlpatterns = [
     path("orden/<uuid:pk>/datos/", views.clinical_data, name="clinical-data"),
     path("orden/<uuid:pk>/valores/<uuid:value_pk>/aviso/", views.critical_notice,
          name="critical-notice"),
+    path("orden/<uuid:pk>/examenes/<uuid:result_pk>/rectificar/", views.amend,
+         name="amend"),
 ]

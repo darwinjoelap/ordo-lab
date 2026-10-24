@@ -15,6 +15,7 @@ from django.utils import timezone
 from apps.core.exceptions import ApplicationError
 from apps.orders.services.order_progress import refresh_order_progress, set_item_status
 from apps.results.models import CriticalNotification, Result, ResultValue
+from apps.results.services.amendment import close_open_amendments
 from apps.results.services.result_capture import build_sheet, save_sheet
 from apps.results.services.value_parsing import format_value
 from apps.settings_lab.models import TenantSettings
@@ -60,9 +61,14 @@ def validate_results(*, order, result_ids: list | None = None, user=None) -> lis
     now = timezone.now()
     for block in blocks:
         result = block.result
-        result.status = Result.Status.VALIDADO
+        # Si venía de una rectificación (Fase 15) queda en RECTIFICADO, no en VALIDADO:
+        # el informe lo sella y la evolución del paciente ya contaba con ese estado.
+        amended = result.amendments.filter(closed_at__isnull=True).exists()
+        result.status = Result.Status.RECTIFICADO if amended else Result.Status.VALIDADO
         result.validated_by, result.validated_at = user, now
         result.save(update_fields=["status", "validated_by", "validated_at", "updated_at"])
+        if amended:
+            close_open_amendments(result, when=now)
         set_item_status(item=block.item, status="VALIDADO")
     refresh_order_progress(order)
     return [b.result for b in blocks]

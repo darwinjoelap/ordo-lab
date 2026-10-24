@@ -61,7 +61,8 @@
     <div class="card__head">
       <h2>{{ block.item.test.name }}</h2>
       <span class="muted small">{{ block.item.test.section.name|lower|capfirst }}</span>
-      {% if block.result.is_validated %}<span class="tag tag--ok">Validado</span>
+      {% if block.result.status == "RECTIFICADO" %}<span class="tag tag--ok">Validado</span><span class="tag tag--warn" title="Corrige a una versión anterior del informe">Rectificado</span>
+      {% elif block.result.is_validated %}<span class="tag tag--ok">Validado</span>
       {% elif block.result.status == "CARGADO" %}<span class="tag tag--warn">Por validar</span>
       {% elif block.has_values %}<span class="tag tag--brand">Incompleto</span>
       {% else %}<span class="tag">Por cargar</span>{% endif %}
@@ -70,6 +71,19 @@
       <span class="muted small">{% if block.result.validated_by %}Validó {{ block.result.validated_by }} · {{ block.result.validated_at|date:"d/m h:i A" }}{% elif block.result.entered_by %}Cargó {{ block.result.entered_by }} · {{ block.result.entered_at|date:"d/m h:i A" }}{% endif %}</span>
       {% if can_validate and not block.result.is_validated and block.has_values %}
       <button class="btn btn--sm" formaction="{% url 'results:validate' order.pk %}" name="result" value="{{ block.result.pk }}">{% icon "shield-check" %} Validar</button>
+      {% endif %}
+      {# Rectificar (Fase 15): el campo y el botón pertenecen al formulario suelto del
+         final por el atributo `form`, porque un formulario no puede anidarse en otro. #}
+      {% if can_validate and block.result.is_validated %}
+      <span x-data="{ open: false }" class="row" style="gap:6px">
+        <button type="button" class="btn btn--sm btn--ghost" @click="open = true" x-show="!open">{% icon "rotate-ccw" %} Rectificar</button>
+        <span class="inline-form" x-show="open" x-cloak>
+          <input form="amend-{{ block.result.pk }}" name="reason" required
+                 placeholder="Motivo (no se imprime en el informe)">
+          <button form="amend-{{ block.result.pk }}" class="btn btn--sm btn--danger" data-online-only>Rectificar</button>
+          <button type="button" class="btn btn--sm btn--ghost" @click="open = false" aria-label="Cancelar">{% icon "x" %}</button>
+        </span>
+      </span>
       {% endif %}
     </div>
     <div class="card__body card__body--flush table-wrap">
@@ -114,6 +128,24 @@
         </tbody>
       </table>
     </div>
+    {% if block.result.amendments.all %}
+    {# Rectificaciones (Fase 15): el motivo es interno, no sale en el informe. #}
+    <div class="card__body obs">
+      <span class="obs__label">Rectificaciones</span>
+      {% for a in block.result.amendments.all %}
+      <details class="obs__internal">
+        <summary>N.º {{ a.version }} · {{ a.amended_at|date:"d/m/Y h:i A" }} ·
+          {{ a.created_by.get_full_name|default:a.created_by|default:"—" }}
+          {% if a.is_open %}<span class="tag tag--warn">abierta</span>{% endif %}</summary>
+        <p class="small" style="margin:var(--s2) 0"><b>Motivo:</b> {{ a.reason }}</p>
+        {% if a.snapshot.values %}
+        <p class="muted small" style="margin:0">Decía antes:
+          {% for v in a.snapshot.values %}{{ v.name }} {{ v.value }}{{ v.unit }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+        {% endif %}
+      </details>
+      {% endfor %}
+    </div>
+    {% endif %}
     {% if block.result.is_validated %}
       {% if block.observations or block.internal_note %}
       <div class="card__body obs">
@@ -148,6 +180,12 @@
     {% if can_validate %}<button class="btn" type="submit" data-online-only formaction="{% url 'results:validate' order.pk %}">{% icon "shield-check" %} Validar lo cargado</button>{% endif %}
   </div>
 </form>
+{# Fase 15: un formulario por examen validado, fuera del de captura (no se anidan). Los
+   campos viven en la cabecera del examen y se asocian aquí por el atributo `form`. #}
+{% for block in sheet.blocks %}{% if can_validate and block.result.is_validated %}
+<form method="post" id="amend-{{ block.result.pk }}"
+      action="{% url 'results:amend' order.pk block.result.pk %}">{% csrf_token %}</form>
+{% endif %}{% endfor %}
 <script>
   // Observación predefinida: se agrega en una línea nueva y, si tiene huecos "__", queda
   // seleccionado el primero para escribir encima.

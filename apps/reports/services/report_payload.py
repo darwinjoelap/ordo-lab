@@ -88,12 +88,19 @@ def build_payload(order) -> dict:
         user = block["validated_by"]
         if user is not None and str(user.pk) not in signers:
             signers[str(user.pk)] = _signer(user)
-        sections[-1]["tests"].append({
+        test = {
             "code": block["code"], "name": block["name"], "method": block["method"],
             "validated_at": _iso(block["validated_at"]),
             "validated_by": str(user.pk) if user else "",
             "observations": block["observations"], "rows": block["rows"],
-        })
+        }
+        # Fase 15: la clave `amended` sólo se agrega cuando el examen fue rectificado.
+        # Omitirla cuando no lo fue mantiene la huella idéntica a la que ya tenían los
+        # informes emitidos, así ninguno queda marcado como desactualizado por esta
+        # fase. El motivo NO entra al payload a propósito: es interno, no se imprime.
+        if block.get("amended"):
+            test["amended"] = True
+        sections[-1]["tests"].append(test)
 
     return {
         "schema": SCHEMA,
@@ -111,6 +118,9 @@ def build_payload(order) -> dict:
         "pending_tests": facts["pending_tests"],
         "signers": list(signers.values()),
         "test_count": sum(len(s["tests"]) for s in sections),
+        **({"amended_tests": amended} if (amended := [
+            t["name"] for section in sections for t in section["tests"]
+            if t.get("amended")]) else {}),
     }
 
 

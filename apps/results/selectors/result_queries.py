@@ -4,13 +4,17 @@ from __future__ import annotations
 from apps.results.models import Result, ResultValue
 from apps.results.services.value_parsing import format_value
 
+# Un resultado rectificado (Fase 15) sigue siendo un resultado validado: entra al informe
+# y cuenta como valor anterior del paciente. Mismo criterio que `selectors/evolution.py`.
+VALIDATED = (Result.Status.VALIDADO, Result.Status.RECTIFICADO)
+
 
 def previous_values(*, patient, parameters, exclude_order) -> dict:
     """{parameter_id: {"text", "flag", "date", "numeric"}} con el último valor VALIDADO
     del paciente en otra orden (para comparar al cargar)."""
     values = (
         ResultValue.objects.filter(
-            parameter__in=parameters, result__status=Result.Status.VALIDADO,
+            parameter__in=parameters, result__status__in=VALIDATED,
             result__order_item__order__patient=patient,
         )
         .exclude(result__order_item__order=exclude_order)
@@ -43,10 +47,11 @@ def report_results(*, order) -> list[dict]:
     Cada examen: {"code", "name", "section", "section_order", "page_break", "method",
     "validated_at", "validated_by", "observations", "rows": [...]}."""
     results = list(
-        Result.objects.filter(order_item__order=order, status=Result.Status.VALIDADO)
+        Result.objects.filter(order_item__order=order, status__in=VALIDATED)
         .exclude(order_item__status="ANULADO")
         .select_related("order_item__test__section", "order_item__test__method",
                         "validated_by")
+        .prefetch_related("amendments")
         .order_by("order_item__test__section__order_index", "order_item__order_index")
     )
     values = (
@@ -81,6 +86,7 @@ def report_results(*, order) -> list[dict]:
             "validated_at": result.validated_at,
             "validated_by": result.validated_by,
             "observations": result.observations,
+            "amended": result.status == Result.Status.RECTIFICADO,
             "rows": rows_by_result.get(result.pk, []),
         })
     return blocks

@@ -115,6 +115,49 @@ class ResultValue(TenantBaseModel):
         return self.flag in (self.Flag.CRITICO_BAJO, self.Flag.CRITICO_ALTO)
 
 
+class ResultAmendment(TenantBaseModel):
+    """Rectificación de un resultado ya validado (Fase 15).
+
+    Un resultado validado no se edita: para corregirlo se abre una rectificación, que
+    **congela cómo estaba** (`snapshot`) antes de reabrirlo. Lo que el paciente recibió
+    ya está congelado aparte, en el `payload` del informe de esa versión, así que entre
+    los dos queda la historia completa: qué decía, qué dice ahora, quién lo cambió y por
+    qué.
+
+    El motivo es interno: se ve en la pantalla y en la auditoría, pero no se imprime en
+    el informe (decisión de Darwin, 2026-10-15). El informe corregido sí lleva el sello
+    *RECTIFICADO* y qué exámenes cambiaron.
+    """
+
+    result = models.ForeignKey(Result, on_delete=models.PROTECT, related_name="amendments",
+                               verbose_name="Resultado")
+    version = models.PositiveSmallIntegerField("Rectificación N.º")
+    reason = models.TextField("Motivo")
+    # Cómo estaba el resultado antes de reabrirlo: valores impresos, marcas, referencias,
+    # quién lo había validado y cuándo.
+    snapshot = models.JSONField("Contenido anterior", default=dict, blank=True)
+    amended_at = models.DateTimeField("Rectificado el")
+    # Queda en VALIDADO/RECTIFICADO de nuevo cuando se vuelve a validar.
+    closed_at = models.DateTimeField("Vuelto a validar el", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Rectificación"
+        verbose_name_plural = "Rectificaciones"
+        ordering = ["result", "-version"]
+        constraints = [
+            models.UniqueConstraint(fields=["result", "version"],
+                                    name="resultamendment_unique_version"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.result} — rectificación {self.version}"
+
+    @property
+    def is_open(self) -> bool:
+        """Abierta = el resultado está corrigiéndose y todavía no se revalidó."""
+        return self.closed_at is None
+
+
 class CriticalNotification(TenantBaseModel):
     """Aviso de un valor crítico (quién avisó = `created_by`, cuándo = `notified_at`)."""
 

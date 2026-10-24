@@ -29,8 +29,9 @@ from apps.results.forms import (
     entries_from_post,
     notes_from_post,
 )
-from apps.results.models import ResultValue
-from apps.results.selectors.result_queries import result_value_of_order
+from apps.results.models import Result, ResultValue
+from apps.results.selectors.result_queries import result_of_order, result_value_of_order
+from apps.results.services.amendment import amend_result
 from apps.results.services.result_capture import build_sheet, save_sheet
 from apps.results.services.validation import notify_critical, validate_results
 
@@ -150,4 +151,25 @@ def clinical_data(request, pk):
             messages.success(request, "Datos del paciente actualizados; cálculos al día.")
     else:
         messages.error(request, "Revise peso, talla y volumen de orina.")
+    return redirect("results:capture", pk=order.pk)
+
+
+@role_required(*CAPTURE_ROLES)
+@require_POST
+def amend(request, pk, result_pk):
+    """Abre una rectificación de un examen ya validado (Fase 15) y lo reabre para
+    corregirlo. No cambia ningún valor: eso se hace en la captura de siempre."""
+    if not can_validate_results(request.user):
+        raise PermissionDenied("Su rol no puede rectificar resultados validados.")
+    order = _order(pk)
+    try:
+        result = result_of_order(order=order, pk=result_pk)
+        amend_result(result=result, reason=request.POST.get("reason", ""),
+                     user=request.user)
+    except (ApplicationError, Result.DoesNotExist, ValidationError) as exc:
+        messages.error(request, getattr(exc, "message", "Examen no encontrado."))
+    else:
+        messages.warning(request, f"{result.order_item.test.name} quedó abierto para "
+                         "corregir. Al validarlo de nuevo, emita el informe: saldrá como "
+                         "rectificado.")
     return redirect("results:capture", pk=order.pk)
