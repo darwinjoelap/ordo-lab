@@ -90,6 +90,13 @@
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
+
+/* El `display: none` que el navegador le da a [hidden] viene de su hoja de
+   usuario-agente, y pierde contra CUALQUIER regla de autor sobre `display`. Sin esta
+   línea, `.offline-banner { display: flex }` y `.tag { display: inline-flex }` dejaban
+   visibles —y vacíos— el aviso de sincronización y sus distintivos, que el JS oculta
+   poniéndoles `hidden`. El `!important` es necesario: es lo único que gana. */
+[hidden] { display: none !important; }
 body {
   margin: 0;
   font-family: var(--font);
