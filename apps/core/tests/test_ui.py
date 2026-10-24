@@ -1,4 +1,8 @@
+from django.conf import settings
+from django.shortcuts import resolve_url
 from django.template import Context, Template
+from django.test import RequestFactory, SimpleTestCase, override_settings
+from django.urls import resolve
 from django_tenants.test.cases import TenantTestCase
 from django_tenants.test.client import TenantClient
 
@@ -57,3 +61,24 @@ class EtiquetasUiTests(TenantTestCase):
     def test_icono(self):
         html = Template('{% load ui %}{% icon "house" %}').render(Context())
         assert '<use href="#i-house">' in html
+
+
+class DestinoTrasEntrarTests(SimpleTestCase):
+    """`LOGIN_REDIRECT_URL` se resuelve contra el URLconf activo, y hay dos: el de los
+    laboratorios y el del esquema `public`. Cuando era el nombre `tenant-home` —que sólo
+    existe en el primero— entrar por el dominio de plataforma daba 500 por
+    NoReverseMatch. Pasó inadvertido porque al panel se llega con ?next=/panel/, que
+    evita el destino por defecto (2026-10-24)."""
+
+    def test_resuelve_en_los_dos_esquemas(self):
+        for urlconf in (settings.ROOT_URLCONF, settings.PUBLIC_SCHEMA_URLCONF):
+            with self.subTest(urlconf=urlconf), override_settings(ROOT_URLCONF=urlconf):
+                assert resolve_url(settings.LOGIN_REDIRECT_URL)
+
+    @override_settings(ROOT_URLCONF=settings.PUBLIC_SCHEMA_URLCONF)
+    def test_la_raiz_de_la_plataforma_lleva_al_panel(self):
+        """Se llama la vista directamente: una petición completa pasaría por
+        TenantMainMiddleware, que consulta la base, y aquí no hace falta."""
+        vista = resolve("/").func
+        response = vista(RequestFactory().get("/"))
+        assert response.status_code == 302 and response["Location"] == "/panel/"

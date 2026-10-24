@@ -86,7 +86,10 @@ TENANT_COLOR_ADMIN_APPS = False
 AUTH_USER_MODEL = "accounts.User"
 
 LOGIN_URL = "accounts:login"
-LOGIN_REDIRECT_URL = "tenant-home"
+# Una ruta, no un nombre: `tenant-home` sólo existe en el URLconf de los
+# laboratorios, así que en el esquema `public` el redirect tras entrar moría con
+# NoReverseMatch (500). "/" existe en los dos.
+LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
 PUBLIC_SCHEMA_URLCONF = "config.urls_public"
