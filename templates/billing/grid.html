@@ -7,8 +7,13 @@
 {% if not lists %}
 <div class="card"><div class="empty">{% icon "tag" %}<h3>No hay listas de precios</h3><p class="muted">Cree la primera en el administrador (Fase 11d la traerá aquí).</p></div></div>
 {% else %}
-{# La tasa, arriba y en una línea. El formulario de registro se despliega al tocarla:
-   es lo que ocupaba espacio, y casi nunca se usa porque el cron la trae del BCV. #}
+{% comment %}
+La tasa, arriba y en una línea. El formulario de registro se despliega al tocarla: es lo
+que ocupaba espacio, y casi nunca se usa porque el cron la trae del BCV.
+
+Ojo con `{#...#}`: Django sólo lo reconoce en una línea. Escrito en dos, se imprime como
+texto y además entra como elemento de la rejilla, que fue justo lo que pasó aquí.
+{% endcomment %}
 <div class="ratebar"{% if can.prices_edit and rates %} x-data="{ open: false }" :class="{ 'is-open': open }"{% endif %}>
   {% if can.prices_edit and rates %}
   <button type="button" class="ratebar__head" @click="open = !open"
@@ -68,8 +73,10 @@
     <div class="card__body muted small">{% if can.prices_edit %}Cada precio se guarda al salir del campo. Deje el campo vacío para quitar el precio. {% endif %}Las órdenes ya registradas conservan el precio con que se cotizaron.</div>
   </section>
 
-  {# Sin permiso de edición la columna lateral queda vacía: entonces no se dibuja, y la
-     tabla de precios ocupa el ancho completo (`layout-side--solo`). #}
+  {% comment %}
+  Sin permiso de edición la columna lateral queda vacía: entonces no se dibuja, y la
+  tabla de precios ocupa el ancho completo (`layout-side--solo`).
+  {% endcomment %}
   {% if can.prices_edit %}
   <aside class="stack">
     <section class="card">
