@@ -10,7 +10,9 @@ export default defineRailway(() => {
     start: "gunicorn config.wsgi --log-file - --workers 3 --timeout 60",
     preDeploy: "python manage.py migrate_schemas --noinput",
     replicas: { "us-west2": 1 },
-    domains: ["*.biolifeve.com", "*.lab.ordove.com"],
+    // `*.biolifeve.com` se retiró el 2026-10-27 (ADR-037). Dejarlo aquí haría que el
+    // cutover a IaC lo volviera a crear, y gastaría uno de los dos cupos del plan Hobby.
+    domains: ["*.lab.ordove.com"],
   });
 
   return project("Ordo-Lab", {
