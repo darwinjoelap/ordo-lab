@@ -1,8 +1,10 @@
 import datetime
 
 from django.db.models import Q, QuerySet
+from django.utils import timezone
 
-from apps.billing.models import Currency, Discount, ExchangeRate, PriceList, PriceListItem
+from apps.billing.models import Currency, Discount, PriceList, PriceListItem
+from apps.billing.services.exchange import resolve_exchange_rate
 
 
 def valid_price_lists(*, on_date: datetime.date) -> QuerySet[PriceList]:
@@ -80,14 +82,25 @@ def base_currency() -> Currency | None:
 
 
 def latest_rates() -> list[dict]:
-    """Última tasa registrada de la moneda base a cada otra moneda activa."""
+    """Tasa vigente hoy de la moneda base a cada otra moneda activa, con su origen.
+
+    Delega en `resolve_exchange_rate` en vez de consultar `ExchangeRate` directamente,
+    que es lo que hacía antes: así la tarjeta muestra **la misma** tasa con la que se
+    calculan los montos. Leyendo sólo la tabla del laboratorio decía "sin registrar"
+    aunque la tasa oficial del BCV estuviera vigente y aplicándose — y eso invita a
+    cargar una a mano, que por ser de fecha igual o posterior pisa a la oficial y
+    desactiva el automatismo sin que nadie lo note.
+    """
     base = base_currency()
     if base is None:
         return []
+    hoy = timezone.localdate()
     rows = []
     for currency in Currency.objects.filter(is_active=True).exclude(pk=base.pk):
-        rate = (ExchangeRate.objects.filter(from_currency=base, to_currency=currency,
-                                            is_active=True)
-                .order_by("-effective_date").first())
-        rows.append({"currency": currency, "rate": rate})
+        rows.append({
+            "currency": currency,
+            "rate": resolve_exchange_rate(
+                from_currency=base, to_currency=currency, on_date=hoy
+            ),
+        })
     return rows

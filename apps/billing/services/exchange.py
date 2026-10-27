@@ -7,6 +7,7 @@ laboratorios. Gana la de fecha más reciente; en empate manda la del laboratorio
 porque si la cargó a mano fue por algo.
 """
 import datetime
+from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 
 from apps.billing.models import Currency, ExchangeRate
@@ -15,6 +16,31 @@ from apps.masterdata.models import OfficialRate
 
 # Prioridad en empate de fechas: el laboratorio por encima de la tasa global.
 _TENANT, _GLOBAL = 1, 0
+
+LABORATORIO = "laboratorio"
+BCV = "BCV"
+OFICIAL = "oficial"
+
+
+@dataclass(frozen=True)
+class RateInfo:
+    """La tasa que se va a aplicar, con de dónde salió.
+
+    Existe para que la pantalla de precios pueda mostrar **la misma** tasa que usan los
+    montos. Antes leía sólo `ExchangeRate` y decía "sin registrar" aunque la oficial
+    estuviera vigente, lo que invitaba a teclear una a mano y anular el automatismo.
+
+    Los nombres `rate` y `effective_date` son deliberados: son los de `ExchangeRate` y
+    `OfficialRate`, así la plantilla no distingue.
+    """
+
+    rate: Decimal
+    effective_date: datetime.date
+    origin: str
+
+
+def _origin_of(official: OfficialRate) -> str:
+    return BCV if official.source == OfficialRate.Source.BCV else OFICIAL
 
 
 def _tenant_candidates(
@@ -38,11 +64,13 @@ def _tenant_candidates(
     )
     candidates = []
     if direct:
-        candidates.append((direct.effective_date, _TENANT, direct.rate))
+        candidates.append((direct.effective_date, _TENANT, direct.rate, LABORATORIO))
     # La inversa sólo entra si no hay directa o es más reciente: con la misma fecha,
     # manda la directa (es el comportamiento que ya tenía y que los tests fijan).
     if inverse and (not direct or inverse.effective_date > direct.effective_date):
-        candidates.append((inverse.effective_date, _TENANT, Decimal(1) / inverse.rate))
+        candidates.append(
+            (inverse.effective_date, _TENANT, Decimal(1) / inverse.rate, LABORATORIO)
+        )
     return candidates
 
 
@@ -60,7 +88,7 @@ def _global_candidates(
         .first()
     )
     if direct:
-        return [(direct.effective_date, _GLOBAL, direct.rate)]
+        return [(direct.effective_date, _GLOBAL, direct.rate, _origin_of(direct))]
     inverse = (
         OfficialRate.objects.filter(
             from_code=to_currency.code, to_code=from_currency.code,
@@ -70,8 +98,33 @@ def _global_candidates(
         .first()
     )
     if inverse:
-        return [(inverse.effective_date, _GLOBAL, Decimal(1) / inverse.rate)]
+        return [
+            (inverse.effective_date, _GLOBAL, Decimal(1) / inverse.rate,
+             _origin_of(inverse))
+        ]
     return []
+
+
+def resolve_exchange_rate(
+    *, from_currency: Currency, to_currency: Currency, on_date: datetime.date
+) -> RateInfo | None:
+    """La tasa que gana en `on_date`, con su fecha y su origen — o `None` si no hay.
+
+    Es el único lugar donde se decide la precedencia. `get_exchange_rate` devuelve sólo
+    el número; la pantalla de precios necesita además de dónde salió, y las dos tienen
+    que coincidir siempre.
+    """
+    if from_currency.pk == to_currency.pk:
+        return RateInfo(rate=Decimal(1), effective_date=on_date, origin=LABORATORIO)
+    candidates = _tenant_candidates(
+        from_currency=from_currency, to_currency=to_currency, on_date=on_date
+    ) + _global_candidates(
+        from_currency=from_currency, to_currency=to_currency, on_date=on_date
+    )
+    if not candidates:
+        return None
+    effective_date, _, rate, origin = max(candidates, key=lambda c: (c[0], c[1]))
+    return RateInfo(rate=rate, effective_date=effective_date, origin=origin)
 
 
 def get_exchange_rate(
@@ -80,19 +133,15 @@ def get_exchange_rate(
     """Tasa vigente en `on_date` (la más reciente con fecha <= on_date), mirando la del
     laboratorio y la oficial. Si sólo existe la inversa, se usa 1/tasa. Lanza
     `ApplicationError` si no hay ninguna — nunca devuelve una tasa inventada."""
-    if from_currency.pk == to_currency.pk:
-        return Decimal(1)
-    candidates = _tenant_candidates(
-        from_currency=from_currency, to_currency=to_currency, on_date=on_date
-    ) + _global_candidates(
+    info = resolve_exchange_rate(
         from_currency=from_currency, to_currency=to_currency, on_date=on_date
     )
-    if not candidates:
+    if info is None:
         raise ApplicationError(
             f"No hay tasa de cambio {from_currency.code} → {to_currency.code} vigente al "
             f"{on_date:%d/%m/%Y}."
         )
-    return max(candidates, key=lambda c: (c[0], c[1]))[2]
+    return info.rate
 
 
 def convert_amount(

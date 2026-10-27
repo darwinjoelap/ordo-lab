@@ -38,7 +38,7 @@
       <div class="card__head"><h2>{% icon "banknote" %} Tasa de cambio</h2></div>
       <div class="card__body stack" style="gap:var(--s3)">
         {% for r in rates %}
-        <div class="row"><span>1 {{ base.code }} =</span> <b>{% if r.rate %}{{ r.rate.rate|floatformat:"4g" }}{% else %}—{% endif %} {{ r.currency.code }}</b><span class="spacer"></span><span class="muted small">{% if r.rate %}desde {{ r.rate.effective_date|date:"d/m/Y" }}{% else %}sin registrar{% endif %}</span></div>
+        <div class="row"><span>1 {{ base.code }} =</span> <b>{% if r.rate %}{{ r.rate.rate|floatformat:"4g" }}{% else %}—{% endif %} {{ r.currency.code }}</b><span class="spacer"></span><span class="muted small">{% if r.rate %}desde {{ r.rate.effective_date|date:"d/m/Y" }} &middot; {{ r.rate.origin }}{% else %}sin registrar{% endif %}</span></div>
         {% empty %}<p class="muted small">No hay otras monedas activas.</p>{% endfor %}
         {% if can.prices_edit and rates %}
         <form method="post" action="{% url 'billing:rate' %}" class="form-grid" style="padding:0">{% csrf_token %}
