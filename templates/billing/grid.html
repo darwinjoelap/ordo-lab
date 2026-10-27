@@ -7,7 +7,42 @@
 {% if not lists %}
 <div class="card"><div class="empty">{% icon "tag" %}<h3>No hay listas de precios</h3><p class="muted">Cree la primera en el administrador (Fase 11d la traerá aquí).</p></div></div>
 {% else %}
-<div class="layout-side">
+{# La tasa, arriba y en una línea. El formulario de registro se despliega al tocarla:
+   es lo que ocupaba espacio, y casi nunca se usa porque el cron la trae del BCV. #}
+<div class="ratebar"{% if can.prices_edit and rates %} x-data="{ open: false }" :class="{ 'is-open': open }"{% endif %}>
+  {% if can.prices_edit and rates %}
+  <button type="button" class="ratebar__head" @click="open = !open"
+          :aria-expanded="open ? 'true' : 'false'" aria-controls="panel-tasa">
+  {% else %}
+  <div class="ratebar__head">
+  {% endif %}
+    {% icon "banknote" %}
+    <span class="ratebar__items">
+      {% for r in rates %}
+      <span class="ratebar__item">1 {{ base.code }} =
+        <b>{% if r.rate %}{{ r.rate.rate|floatformat:"4g" }}{% else %}—{% endif %} {{ r.currency.code }}</b>
+        <span class="ratebar__meta">{% if r.rate %}{{ r.rate.effective_date|date:"d/m/Y" }} &middot; {{ r.rate.origin }}{% else %}sin registrar{% endif %}</span>
+      </span>
+      {% empty %}<span class="ratebar__meta">No hay otras monedas activas.</span>{% endfor %}
+    </span>
+    <span class="ratebar__spacer"></span>
+    {% if can.prices_edit and rates %}
+    <span class="ratebar__hint">Registrar tasa</span>
+    {% icon "chevron-right" "ratebar__chev" %}
+    </button>
+    <div id="panel-tasa" class="ratebar__panel" x-show="open" x-cloak>
+      <form method="post" action="{% url 'billing:rate' %}" class="form-grid" style="padding:0">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        {% field rate_form.currency "col-4" %}{% field rate_form.rate "col-4" %}{% field rate_form.effective_date "col-4" %}
+        <div class="col-12"><button class="btn">{% icon "save" %} Registrar tasa</button></div>
+      </form>
+    </div>
+    {% else %}
+    </div>
+    {% endif %}
+</div>
+
+<div class="layout-side{% if not can.prices_edit %} layout-side--solo{% endif %}">
   <section class="card">
     <form method="get" class="card__head row" role="search">
       <select name="lista" onchange="this.form.submit()" style="width:230px" aria-label="Lista de precios">
@@ -33,23 +68,10 @@
     <div class="card__body muted small">{% if can.prices_edit %}Cada precio se guarda al salir del campo. Deje el campo vacío para quitar el precio. {% endif %}Las órdenes ya registradas conservan el precio con que se cotizaron.</div>
   </section>
 
+  {# Sin permiso de edición la columna lateral queda vacía: entonces no se dibuja, y la
+     tabla de precios ocupa el ancho completo (`layout-side--solo`). #}
+  {% if can.prices_edit %}
   <aside class="stack">
-    <section class="card">
-      <div class="card__head"><h2>{% icon "banknote" %} Tasa de cambio</h2></div>
-      <div class="card__body stack" style="gap:var(--s3)">
-        {% for r in rates %}
-        <div class="row"><span>1 {{ base.code }} =</span> <b>{% if r.rate %}{{ r.rate.rate|floatformat:"4g" }}{% else %}—{% endif %} {{ r.currency.code }}</b><span class="spacer"></span><span class="muted small">{% if r.rate %}desde {{ r.rate.effective_date|date:"d/m/Y" }} &middot; {{ r.rate.origin }}{% else %}sin registrar{% endif %}</span></div>
-        {% empty %}<p class="muted small">No hay otras monedas activas.</p>{% endfor %}
-        {% if can.prices_edit and rates %}
-        <form method="post" action="{% url 'billing:rate' %}" class="form-grid" style="padding:0">{% csrf_token %}
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          {% field rate_form.currency "col-12" %}{% field rate_form.rate "col-6" %}{% field rate_form.effective_date "col-6" %}
-          <div class="col-12"><button class="btn" style="width:100%">{% icon "save" %} Registrar tasa</button></div>
-        </form>
-        {% endif %}
-      </div>
-    </section>
-    {% if can.prices_edit %}
     <section class="card">
       <div class="card__head"><h2>{% icon "activity" %} Ajuste masivo</h2></div>
       <form method="post" action="{% url 'billing:adjust' current.pk %}" class="card__body form-grid" onsubmit="return confirm('¿Ajustar todos los precios fijos de {{ current.name|escapejs }}?')">{% csrf_token %}
@@ -69,8 +91,8 @@
         </form>
       </div>
     </section>
-    {% endif %}
   </aside>
+  {% endif %}
 </div>
 {% endif %}
 {% endblock %}
