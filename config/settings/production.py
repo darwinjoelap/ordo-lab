@@ -33,7 +33,18 @@ SECURE_HSTS_PRELOAD = False  # no se pide preload hasta tener el dominio definit
 
 # El formulario de la recepción y el panel viajan por subdominios distintos: Django 4+
 # exige el esquema en cada origen de confianza.
-CSRF_TRUSTED_ORIGINS = [f"https://{BASE_DOMAIN}", f"https://*.{BASE_DOMAIN}"]
+#
+# Durante una mudanza de dominio conviven dos: `BASE_DOMAIN`, que es el que arma los
+# enlaces nuevos, y el anterior, que sigue respondiendo mientras queden enlaces
+# circulando. Los dos tienen que estar listados aquí: si falta el viejo, el dominio
+# resuelve y la página carga, pero cualquier formulario enviado desde ahí —el login
+# incluido— muere con 403 y el mensaje no explica por qué.
+LEGACY_DOMAINS = env.list("LEGACY_DOMAINS", default=[])
+CSRF_TRUSTED_ORIGINS = [
+    origen
+    for dominio in [BASE_DOMAIN, *LEGACY_DOMAINS]
+    for origen in (f"https://{dominio}", f"https://*.{dominio}")
+]
 
 # --- Media en Cloudinary --------------------------------------------------------------
 # Firmas, sellos y logos. `CLOUDINARY_URL` viene de la variable de entorno del mismo
