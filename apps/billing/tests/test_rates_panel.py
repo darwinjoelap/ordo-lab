@@ -13,8 +13,12 @@ from django_tenants.test.cases import TenantTestCase
 
 from apps.billing.models import Currency
 from apps.billing.selectors.price_queries import latest_rates
-from apps.billing.services.exchange import BCV, LABORATORIO, get_exchange_rate
-from apps.billing.services.exchange import register_exchange_rate
+from apps.billing.services.exchange import (
+    BCV,
+    LABORATORIO,
+    get_exchange_rate,
+    register_exchange_rate,
+)
 from apps.masterdata.services.bcv import register_official_rate
 
 D = Decimal

@@ -60,7 +60,9 @@ class Command(BaseCommand):
                     continue
 
                 if options["dry_run"]:
-                    self.stdout.write(f"{tenant.schema_name}: crearía {nuevo} (desde {primario.domain}).")
+                    self.stdout.write(
+                        f"{tenant.schema_name}: crearía {nuevo} (desde {primario.domain})."
+                    )
                     continue
 
                 # Domain.save() de django-tenants degrada solo a los demás dominios
@@ -72,4 +74,5 @@ class Command(BaseCommand):
         if options["dry_run"]:
             self.stdout.write(self.style.WARNING("Dry run: no se escribió nada."))
         else:
-            self.stdout.write(self.style.SUCCESS(f"Dominios creados: {creados} — omitidos: {omitidos}"))
+            resumen = f"Dominios creados: {creados} — omitidos: {omitidos}"
+            self.stdout.write(self.style.SUCCESS(resumen))

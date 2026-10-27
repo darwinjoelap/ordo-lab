@@ -70,15 +70,13 @@ class Command(BaseCommand):
                     ascendido = tenant.domains.order_by("pk").first()
                     ascendido.is_primary = True
                     ascendido.save()
-                    self.stdout.write(
-                        self.style.WARNING(f"{tenant.schema_name}: {ascendido.domain} pasa a primario.")
-                    )
+                    aviso = f"{tenant.schema_name}: {ascendido.domain} pasa a primario."
+                    self.stdout.write(self.style.WARNING(aviso))
 
                 self.stdout.write(self.style.SUCCESS(f"{tenant.schema_name}: borrado {nombres}."))
 
         if options["dry_run"]:
             self.stdout.write(self.style.WARNING("Dry run: no se borró nada."))
         else:
-            self.stdout.write(
-                self.style.SUCCESS(f"Dominios borrados: {borrados} — laboratorios omitidos: {omitidos}")
-            )
+            resumen = f"Dominios borrados: {borrados} — laboratorios omitidos: {omitidos}"
+            self.stdout.write(self.style.SUCCESS(resumen))
