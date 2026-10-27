@@ -108,6 +108,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.settings_lab.context_processors.tenant_settings",
                 "apps.accounts.context_processors.ui",
+                "apps.billing.context_processors.exchange_rate",
             ],
         },
     },

@@ -100,6 +100,11 @@ suelto en la barra.
     <header class="topbar">
       <button class="btn btn--ghost btn--icon only-mobile" @click="mobile = !mobile" aria-label="Menú">{% icon "menu" %}</button>
       <button class="btn btn--ghost btn--icon only-desktop" @click="collapsed = !collapsed; localStorage.setItem('bl-sidebar', collapsed ? '1' : '0')" aria-label="Contraer menú" title="Contraer menú">{% icon "panel-left" %}</button>
+      {% if tenant_settings.logo %}
+      <a class="topbar__logo" href="{% url 'tenant-home' %}" title="{{ request.tenant.name }}">
+        <img src="{{ tenant_settings.logo.url }}" alt="{{ request.tenant.name }}">
+      </a>
+      {% endif %}
       <div class="topbar__title">
         <div class="crumbs">{% block crumbs %}{{ request.tenant.name }}{% endblock %}</div>
         <h1>{% block page_title %}Inicio{% endblock %}</h1>
@@ -109,6 +114,19 @@ suelto en la barra.
         {% icon "search" %}
         <input type="search" name="q" placeholder="Orden, tubo (escáner), cédula o nombre…"></label>
       </form>
+      {% comment %}
+      La tasa del día a la vista en toda pantalla: la recepción cotiza en bolívares todo
+      el tiempo y hasta ahora tenía que entrar a Precios para saber con cuál. El enlace
+      lleva allí sólo si el usuario puede editar precios; para los demás es informativo.
+      {% endcomment %}
+      {% if topbar_rate %}
+      {% if can.prices_edit %}<a class="topbar__rate" href="{% url 'billing:grid' %}"{% else %}<span class="topbar__rate"{% endif %}
+         title="Tasa {{ topbar_rate.info.origin }} del {{ topbar_rate.info.effective_date|date:'d/m/Y' }}">
+        {% icon "banknote" %}
+        <b>{{ topbar_rate.info.rate|floatformat:"2g" }}</b>
+        <span class="topbar__rate-unit">{{ topbar_rate.currency.code }}/{{ topbar_rate.base.code }}</span>
+      {% if can.prices_edit %}</a>{% else %}</span>{% endif %}
+      {% endif %}
       <div class="topbar__actions">{% block page_actions %}{% endblock %}</div>
     </header>
 

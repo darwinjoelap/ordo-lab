@@ -742,4 +742,33 @@ button.ratebar__head:focus-visible { outline: 2px solid var(--brand-ring); outli
 .ratebar.is-open .ratebar__chev { transform: rotate(90deg); }
 .ratebar__panel { padding: var(--s3); border-top: 1px solid var(--line); }
 @media (max-width: 760px) { .ratebar__hint { display: none; } }
-.layout-side--solo { grid-template-columns: minmax(0, 1fr); }
+
+/* Logo del laboratorio y tasa del día en la barra superior ---------------------------
+   El logo identifica al laboratorio en toda pantalla, no sólo en el informe. La tasa
+   está ahí porque la recepción cotiza en bolívares todo el día y hasta ahora tenía que
+   entrar a Precios para saber con cuál. Las dos son piezas de altura fija: la barra no
+   crece. */
+.topbar__logo { display: flex; align-items: center; flex: none; }
+.topbar__logo img { height: 30px; max-width: 132px; object-fit: contain; display: block; }
+
+.topbar__rate { display: inline-flex; align-items: baseline; gap: var(--s1); flex: none;
+  padding: 4px var(--s2); border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface-2); color: var(--ink-2); font-size: var(--fs-sm);
+  text-decoration: none; white-space: nowrap; }
+a.topbar__rate:hover { border-color: var(--line-strong); background: var(--surface); }
+.topbar__rate .icon { align-self: center; color: var(--ol-teal-700); }
+.topbar__rate b { font-variant-numeric: tabular-nums; color: var(--ink); }
+.topbar__rate-unit { color: var(--muted); font-size: var(--fs-xs); }
+
+/* En pantallas estrechas la barra ya va justa: el buscador manda, la tasa se queda en
+   su número y el logo cede antes que el título. */
+@media (max-width: 1100px) { .topbar__rate-unit { display: none; } }
+@media (max-width: 900px) { .topbar__logo { display: none; } }
+
+/* Paneles de herramienta desplegables (Precios) --------------------------------------
+   Ajuste masivo y copiar lista vivían en tarjetas de la columna lateral: 360 px fijos
+   para dos tareas de minutos al mes, mientras la tabla —el trabajo diario— iba
+   estrecha. Ahora salen de la cabecera y empujan la tabla hacia abajo sólo mientras
+   están abiertos. */
+.panel-tool { background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.btn.is-active { background: var(--brand-soft); color: var(--brand); }

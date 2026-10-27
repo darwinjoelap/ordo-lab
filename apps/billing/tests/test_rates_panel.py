@@ -11,6 +11,7 @@ from decimal import Decimal
 from django.utils import timezone
 from django_tenants.test.cases import TenantTestCase
 
+from apps.billing.context_processors import _rate_of_the_day
 from apps.billing.models import Currency
 from apps.billing.selectors.price_queries import latest_rates
 from apps.billing.services.exchange import (
@@ -70,3 +71,30 @@ class TarjetaDeTasaTests(TenantTestCase):
         register_official_rate(rate=D("999"),
                                effective_date=self.hoy + datetime.timedelta(days=1))
         self.assertIsNone(self._fila()["rate"])
+
+
+class BarraSuperiorTests(TenantTestCase):
+    """La tasa que se muestra en la barra superior de todas las pantallas."""
+
+    def setUp(self):
+        super().setUp()
+        self.usd = Currency.objects.create(code="USD", name="Dólar", symbol="$",
+                                           is_base=True)
+        self.ves = Currency.objects.create(code="VES", name="Bolívar", symbol="Bs.")
+
+    def test_sin_tasa_no_muestra_nada(self):
+        self.assertIsNone(_rate_of_the_day())
+
+    def test_muestra_la_primera_moneda_con_tasa(self):
+        register_official_rate(rate=D("887.302"), effective_date=timezone.localdate())
+        dato = _rate_of_the_day()
+        self.assertEqual(dato["base"], self.usd)
+        self.assertEqual(dato["currency"], self.ves)
+        self.assertEqual(dato["info"].rate, D("887.302"))
+        self.assertEqual(dato["info"].origin, BCV)
+
+    def test_ignora_las_monedas_sin_tasa(self):
+        """Con dos monedas y tasa en una sola, la barra muestra ésa y no un hueco."""
+        Currency.objects.create(code="EUR", name="Euro", symbol="€")
+        register_official_rate(rate=D("887.302"), effective_date=timezone.localdate())
+        self.assertEqual(_rate_of_the_day()["currency"], self.ves)

@@ -8,11 +8,13 @@
 <div class="card"><div class="empty">{% icon "tag" %}<h3>No hay listas de precios</h3><p class="muted">Cree la primera en el administrador (Fase 11d la traerá aquí).</p></div></div>
 {% else %}
 {% comment %}
-La tasa, arriba y en una línea. El formulario de registro se despliega al tocarla: es lo
-que ocupaba espacio, y casi nunca se usa porque el cron la trae del BCV.
+La tabla ocupa el ancho completo. Todo lo demás —tasa, ajuste masivo, copiar lista— son
+tareas de minutos al mes que antes reservaban 360 px de forma permanente; ahora son
+paneles que se despliegan desde la cabecera y se cierran.
 
-Ojo con `{#...#}`: Django sólo lo reconoce en una línea. Escrito en dos, se imprime como
-texto y además entra como elemento de la rejilla, que fue justo lo que pasó aquí.
+Se usa esta etiqueta y no el comentario de una llave, que Django sólo reconoce dentro de
+una misma línea: partido en dos se imprime como texto y además entra como elemento de la
+rejilla. Pasó aquí.
 {% endcomment %}
 <div class="ratebar"{% if can.prices_edit and rates %} x-data="{ open: false }" :class="{ 'is-open': open }"{% endif %}>
   {% if can.prices_edit and rates %}
@@ -47,9 +49,9 @@ texto y además entra como elemento de la rejilla, que fue justo lo que pasó aq
     {% endif %}
 </div>
 
-<div class="layout-side{% if not can.prices_edit %} layout-side--solo{% endif %}">
-  <section class="card">
-    <form method="get" class="card__head row" role="search">
+<section class="card" x-data="{ panel: null }">
+  <div class="card__head row">
+    <form method="get" class="row" style="gap:var(--s2); flex:1 1 auto" role="search">
       <select name="lista" onchange="this.form.submit()" style="width:230px" aria-label="Lista de precios">
         {% for pl in lists %}<option value="{{ pl.pk }}"{% if pl.pk == current.pk %} selected{% endif %}>{{ pl.name }} ({{ pl.currency.code }}){% if pl.is_default %} · predeterminada{% endif %}</option>{% endfor %}
       </select>
@@ -57,49 +59,55 @@ texto y además entra como elemento de la rejilla, que fue justo lo que pasó aq
         <option value="">Perfiles y exámenes</option>
         {% for s in sections %}<option value="{{ s.pk }}"{% if s.pk|stringformat:"s" == section_id %} selected{% endif %}>{{ s.name|lower|capfirst }}</option>{% endfor %}
       </select>
-      <span class="spacer"></span>
-      <label class="picker__input" style="width:min(260px,100%)"><span class="sr-only">Buscar</span>{% icon "search" %}
+      <label class="picker__input" style="width:min(300px,100%)"><span class="sr-only">Buscar</span>{% icon "search" %}
         <input type="search" name="q" value="{{ query }}" placeholder="Código o nombre…"></label>
     </form>
-    <div class="card__body card__body--flush table-wrap">
-      <table class="table">
-        <thead><tr><th>Examen / perfil</th><th>Sección</th><th>Modo</th><th class="num">Precio</th><th></th></tr></thead>
-        <tbody>
-        {% for kind, obj, item in rows %}{% include "billing/_row.html" %}{% empty %}
-        <tr><td colspan="5"><div class="empty">{% icon "search" %}<h3>Sin resultados</h3></div></td></tr>{% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <div class="card__body muted small">{% if can.prices_edit %}Cada precio se guarda al salir del campo. Deje el campo vacío para quitar el precio. {% endif %}Las órdenes ya registradas conservan el precio con que se cotizaron.</div>
-  </section>
+    {% if can.prices_edit %}
+    <span class="spacer"></span>
+    <button type="button" class="btn btn--ghost" :class="{ 'is-active': panel === 'ajuste' }"
+            @click="panel = panel === 'ajuste' ? null : 'ajuste'"
+            :aria-expanded="(panel === 'ajuste').toString()" aria-controls="panel-ajuste">
+      {% icon "activity" %} Ajuste masivo
+    </button>
+    <button type="button" class="btn btn--ghost" :class="{ 'is-active': panel === 'lista' }"
+            @click="panel = panel === 'lista' ? null : 'lista'"
+            :aria-expanded="(panel === 'lista').toString()" aria-controls="panel-lista">
+      {% icon "copy" %} Lista
+    </button>
+    {% endif %}
+  </div>
 
-  {% comment %}
-  Sin permiso de edición la columna lateral queda vacía: entonces no se dibuja, y la
-  tabla de precios ocupa el ancho completo (`layout-side--solo`).
-  {% endcomment %}
   {% if can.prices_edit %}
-  <aside class="stack">
-    <section class="card">
-      <div class="card__head"><h2>{% icon "activity" %} Ajuste masivo</h2></div>
-      <form method="post" action="{% url 'billing:adjust' current.pk %}" class="card__body form-grid" onsubmit="return confirm('¿Ajustar todos los precios fijos de {{ current.name|escapejs }}?')">{% csrf_token %}
-        {% field adjust_form.percent "col-6" %}{% field adjust_form.round_to "col-6" %}
-        <div class="field col-12"><label class="row" style="gap:8px">{{ adjust_form.include_profiles }} {{ adjust_form.include_profiles.label }}</label></div>
-        <div class="col-12"><button class="btn" style="width:100%">Aplicar a {{ current.name }}</button></div>
-      </form>
-    </section>
-    <section class="card" x-data="{ open: false }">
-      <div class="card__head"><h2>{% icon "copy" %} Lista</h2></div>
-      <div class="card__body stack" style="gap:var(--s3)">
-        {% if not current.is_default %}<form method="post" action="{% url 'billing:default' current.pk %}">{% csrf_token %}<button class="btn" style="width:100%">Usar {{ current.name }} por defecto</button></form>{% else %}<p class="muted small" style="margin:0">{{ current.name }} es la lista predeterminada de las órdenes nuevas.</p>{% endif %}
-        <button type="button" class="btn btn--ghost" @click="open = !open">{% icon "copy" %} Copiar a una lista nueva</button>
-        <form method="post" action="{% url 'billing:copy' current.pk %}" class="form-grid" style="padding:0" x-show="open" x-cloak>{% csrf_token %}
-          {% field copy_form.code "col-6" %}{% field copy_form.name "col-6" %}{% field copy_form.currency "col-12" %}{% field copy_form.percent "col-6" %}{% field copy_form.round_to "col-6" %}
-          <div class="col-12"><button class="btn btn--primary" style="width:100%">Crear copia</button></div>
-        </form>
-      </div>
-    </section>
-  </aside>
+  <div id="panel-ajuste" class="card__body panel-tool" x-show="panel === 'ajuste'" x-cloak>
+    <form method="post" action="{% url 'billing:adjust' current.pk %}" class="form-grid" style="padding:0"
+          onsubmit="return confirm('¿Ajustar todos los precios fijos de {{ current.name|escapejs }}?')">{% csrf_token %}
+      {% field adjust_form.percent "col-3" %}{% field adjust_form.round_to "col-3" %}
+      <div class="field col-3"><label class="row" style="gap:8px">{{ adjust_form.include_profiles }} {{ adjust_form.include_profiles.label }}</label></div>
+      <div class="col-3" style="align-self:end"><button class="btn">Aplicar a {{ current.name }}</button></div>
+    </form>
+  </div>
+
+  <div id="panel-lista" class="card__body panel-tool stack" x-show="panel === 'lista'" x-cloak style="gap:var(--s3)">
+    {% if not current.is_default %}
+    <form method="post" action="{% url 'billing:default' current.pk %}">{% csrf_token %}<button class="btn">Usar {{ current.name }} por defecto</button></form>
+    {% else %}<p class="muted small" style="margin:0">{{ current.name }} es la lista predeterminada de las órdenes nuevas.</p>{% endif %}
+    <form method="post" action="{% url 'billing:copy' current.pk %}" class="form-grid" style="padding:0">{% csrf_token %}
+      {% field copy_form.code "col-2" %}{% field copy_form.name "col-4" %}{% field copy_form.currency "col-2" %}{% field copy_form.percent "col-2" %}{% field copy_form.round_to "col-2" %}
+      <div class="col-12"><button class="btn btn--primary">{% icon "copy" %} Crear copia</button></div>
+    </form>
+  </div>
   {% endif %}
-</div>
+
+  <div class="card__body card__body--flush table-wrap">
+    <table class="table">
+      <thead><tr><th>Examen / perfil</th><th>Sección</th><th>Modo</th><th class="num">Precio</th><th></th></tr></thead>
+      <tbody>
+      {% for kind, obj, item in rows %}{% include "billing/_row.html" %}{% empty %}
+      <tr><td colspan="5"><div class="empty">{% icon "search" %}<h3>Sin resultados</h3></div></td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card__body muted small">{% if can.prices_edit %}Cada precio se guarda al salir del campo. Deje el campo vacío para quitar el precio. {% endif %}Las órdenes ya registradas conservan el precio con que se cotizaron.</div>
+</section>
 {% endif %}
 {% endblock %}
