@@ -180,6 +180,25 @@ class Sample(TenantBaseModel):
         TOMADA = "TOMADA", "Tomada"
         RECHAZADA = "RECHAZADA", "Rechazada"
 
+    class Origin(models.TextChoices):
+        """De dónde viene la muestra.
+
+        Va en la muestra y no en la orden porque una misma orden mezcla las dos cosas: la
+        depuración de creatinina necesita el envase de orina de 24 h —que el paciente trae
+        de casa por fuerza— y un tubo de sangre que se toma en la recepción.
+
+        Cualquier valor distinto de `LABORATORIO` significa que llegó **ya tomada**: nace
+        `TOMADA` sin pasar por la lista de muestras por tomar, y su hora de toma es
+        **declarada por un tercero**, no registrada por el laboratorio. La diferencia
+        importa clínicamente —una glicemia de hace cinco horas no vale lo que una de hace
+        diez minutos— y por eso en esos casos `collected_by` queda vacío: nadie del
+        laboratorio la tomó. Quién la recibió queda en `created_by`.
+        """
+        LABORATORIO = "LABORATORIO", "Tomada en el laboratorio"
+        PACIENTE = "PACIENTE", "Traída por el paciente"
+        DOMICILIO = "DOMICILIO", "Tomada a domicilio"
+        REFERIDA = "REFERIDA", "Referida de otro laboratorio"
+
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="samples")
     sequence = models.PositiveSmallIntegerField("Secuencia")
     number = models.CharField("Número", max_length=14, unique=True, editable=False)
@@ -190,6 +209,13 @@ class Sample(TenantBaseModel):
         verbose_name="Tubo",
     )
     collection_label = models.CharField("Toma", max_length=30, blank=True, default="")
+    origin = models.CharField(
+        "Procedencia", max_length=12, choices=Origin.choices, default=Origin.LABORATORIO
+    )
+    origin_detail = models.CharField(
+        "Detalle de la procedencia", max_length=150, blank=True, default="",
+        help_text="Clínica, laboratorio o persona que la trajo. Se imprime en el informe.",
+    )
     is_exclusive = models.BooleanField(
         "Tubo propio", default=False, help_text="No recibe exámenes de otros requisitos."
     )
@@ -221,10 +247,22 @@ class Sample(TenantBaseModel):
         constraints = [
             models.UniqueConstraint(fields=["order", "sequence"],
                                     name="sample_unique_sequence"),
+            # El detalle sólo tiene sentido cuando la muestra viene de fuera: en una tomada
+            # aquí no hay a quién atribuirla, y dejarlo suelto acabaría usándose de campo
+            # de notas, que ya existe en la orden.
+            models.CheckConstraint(
+                condition=~models.Q(origin="LABORATORIO") | models.Q(origin_detail=""),
+                name="sample_origin_detail_only_when_external",
+            ),
         ]
 
     def __str__(self) -> str:
         return self.number
+
+    @property
+    def arrived_collected(self) -> bool:
+        """Llegó ya tomada: su hora de toma es declarada, no registrada aquí."""
+        return self.origin != self.Origin.LABORATORIO
 
 
 class LabelPrint(TenantBaseModel):

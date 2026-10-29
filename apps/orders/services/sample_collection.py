@@ -50,6 +50,46 @@ def collect_sample(*, sample: Sample, user=None, at=None) -> Sample:
     return sample
 
 
+def receive_sample(
+    *, sample: Sample, origin: str, collected_at, origin_detail: str = "", user=None
+) -> Sample:
+    """Registra una muestra que **llegó ya tomada**.
+
+    Se separa de `collect_sample` a propósito, aunque las dos la dejen en `TOMADA`: lo que
+    la distingue es que la hora de toma la declara un tercero y que nadie del laboratorio
+    la tomó. Por eso `collected_by` queda vacío — atribuir la toma a quien la recibió en el
+    mostrador sería falsear la trazabilidad, y la firma de un informe se sostiene sobre ese
+    dato. Quién la recibió queda en `created_by`.
+
+    `collected_at` es obligatoria: una muestra que llega sin hora de toma no se puede
+    interpretar, y poner la de ahora sería inventarla.
+    """
+    _check_order_open(sample.order)
+    if origin not in Sample.Origin.values:
+        raise ApplicationError(f"'{origin}' no es una procedencia válida.")
+    if origin == Sample.Origin.LABORATORIO:
+        raise ApplicationError(
+            "Una muestra tomada en el laboratorio se marca con la toma normal, no aquí."
+        )
+    if sample.status == Sample.Status.RECHAZADA:
+        raise ApplicationError(f"La muestra {sample.number} fue rechazada.")
+    if collected_at is None:
+        raise ApplicationError("Indique la hora en que se tomó la muestra.")
+    if collected_at > timezone.now():
+        raise ApplicationError("La hora de toma no puede estar en el futuro.")
+
+    with transaction.atomic():
+        sample.origin = origin
+        sample.origin_detail = (origin_detail or "").strip()
+        sample.status = Sample.Status.TOMADA
+        sample.collected_at = collected_at
+        sample.collected_by = None
+        sample.save(update_fields=["origin", "origin_detail", "status", "collected_at",
+                                   "collected_by", "updated_at"])
+        refresh_order_status(sample.order)
+    return sample
+
+
 def collect_all(*, order: Order, user=None) -> int:
     """Marca como tomadas todas las muestras por tomar. Devuelve cuántas."""
     _check_order_open(order)
