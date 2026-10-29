@@ -13,6 +13,13 @@ select = ["E", "F", "I", "N", "UP", "DJ", "B", "C4", "SIM"]
 DJANGO_SETTINGS_MODULE = "config.settings.local"
 python_files = ["test_*.py", "*_test.py"]
 testpaths = ["apps"]
+# En paralelo por defecto (2026-10-28). `TenantTestCase` crea un esquema y le corre todas
+# las migraciones en cada clase: medido con `--durations=0`, un `setup` de 9,5 s frente a
+# centésimas por prueba. Repartir las clases entre procesos no quita ese coste, lo paga en
+# varios sitios a la vez — de 19:43 a 5:38 con ocho procesos. No escala al número de
+# núcleos porque todos van contra el mismo Postgres.
+# Para depurar una prueba suelta, `-n 0` devuelve la ejecución a un solo proceso.
+addopts = "-n auto"
 # "Test?*" y no "Test*": el modelo del catálogo se llama `Test` y pytest intentaba
 # recolectarlo como clase de pruebas en cada módulo que lo importa.
 python_classes = ["Test?*", "*Tests"]
