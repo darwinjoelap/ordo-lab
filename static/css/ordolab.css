@@ -760,9 +760,10 @@ a.topbar__rate:hover { border-color: var(--line-strong); background: var(--surfa
 .topbar__rate b { font-variant-numeric: tabular-nums; color: var(--ink); }
 .topbar__rate-unit { color: var(--muted); font-size: var(--fs-xs); }
 
-/* En pantallas estrechas la barra ya va justa: el buscador manda, la tasa se queda en
-   su número y el logo cede antes que el título. */
-@media (max-width: 1100px) { .topbar__rate-unit { display: none; } }
+/* La unidad NO se oculta nunca, aunque la barra vaya justa: comprobado en navegador el
+   2026-10-28, un `888,89` a secas no dice de qué moneda habla ni en qué sentido va la
+   conversión, y a 1000 px todavía sobraba sitio. El logo sí cede, porque el nombre del
+   laboratorio ya está en la barra lateral. */
 @media (max-width: 900px) { .topbar__logo { display: none; } }
 
 /* Paneles de herramienta desplegables (Precios) --------------------------------------
