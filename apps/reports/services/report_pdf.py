@@ -267,6 +267,26 @@ def _story(payload: dict) -> list:
                                  ("TOPPADDING", (0, 0), (-1, -1), 4),
                                  ("BOTTOMPADDING", (0, 0), (-1, -1), 5)]))
         story += [box, Spacer(1, 3 * mm)]
+    if payload.get("external_samples"):
+        # El médico necesita saber que la muestra no se tomó aquí y a qué hora dicen que
+        # se tomó: una glicemia de hace cinco horas no se interpreta igual que una recién
+        # tomada. Se dice "hora declarada" a propósito — el laboratorio no la presenció.
+        lineas = []
+        for muestra in payload["external_samples"]:
+            detalle = f" ({muestra['detail']})" if muestra.get("detail") else ""
+            hora = fmt_dt(muestra.get("collected_at", ""))
+            lineas.append(
+                f"{escape(muestra['container'])}: {escape(muestra['origin'])}"
+                f"{escape(detalle)}"
+                + (f", hora declarada {escape(hora)}" if hora else "")
+            )
+        box = Table([[Paragraph(
+            "<b>MUESTRA NO TOMADA EN EL LABORATORIO.</b> " + "; ".join(lineas) + ".",
+            ST["warn"])]], colWidths=[BODY_W])
+        box.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), WARN_BG),
+                                 ("TOPPADDING", (0, 0), (-1, -1), 4),
+                                 ("BOTTOMPADDING", (0, 0), (-1, -1), 5)]))
+        story += [box, Spacer(1, 3 * mm)]
     for index, section in enumerate(payload["sections"]):
         if index and section.get("page_break"):
             story.append(PageBreak())

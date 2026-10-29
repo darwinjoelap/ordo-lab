@@ -72,6 +72,32 @@ def _signer(user) -> dict:
     }
 
 
+def _external_samples(order) -> list[dict]:
+    """Muestras que **no** se tomaron en el laboratorio.
+
+    Entra al contenido sólo cuando hay alguna, igual que `amended_tests`: así el 90 % de
+    los informes no cambia de forma y, sobre todo, `SCHEMA` no se toca. Subirlo cambiaría
+    la huella de todas las órdenes aunque no tengan procedencia externa, y `is_outdated`
+    marcaría como "hay que emitir de nuevo" todos los informes ya emitidos.
+
+    El médico que lee el resultado necesita este dato: una glicemia de una muestra tomada
+    cinco horas antes en casa no se interpreta igual que una tomada en la recepción. Por
+    eso se imprime la hora **declarada**, no sólo la procedencia.
+    """
+    externas = []
+    for sample in order.samples.exclude(status="RECHAZADA").order_by("sequence"):
+        if sample.origin == "LABORATORIO":
+            continue
+        externas.append({
+            "number": sample.number,
+            "container": sample.container_type.name,
+            "origin": sample.get_origin_display(),
+            "detail": sample.origin_detail,
+            "collected_at": _iso(sample.collected_at),
+        })
+    return externas
+
+
 def build_payload(order) -> dict:
     """Contenido del informe con lo validado hoy. `kind` = FINAL si no queda ningún
     examen vigente sin validar."""
@@ -121,6 +147,8 @@ def build_payload(order) -> dict:
         **({"amended_tests": amended} if (amended := [
             t["name"] for section in sections for t in section["tests"]
             if t.get("amended")]) else {}),
+        **({"external_samples": externas}
+           if (externas := _external_samples(order)) else {}),
     }
 
 

@@ -31,13 +31,13 @@
       </div>
       <div class="card__body tubes">
         {% for s in samples %}
-        <div class="tube {% if s.status == 'TOMADA' %}is-taken{% elif s.status == 'RECHAZADA' %}is-rejected{% endif %}" style="--tube: {{ s.container_type.color }}" x-data="{ rejecting: false }">
+        <div class="tube {% if s.status == 'TOMADA' %}is-taken{% elif s.status == 'RECHAZADA' %}is-rejected{% endif %}" style="--tube: {{ s.container_type.color }}" x-data="{ rejecting: false, receiving: false }">
           <span class="tube-dot" title="{{ s.container_type.name }}"></span>
           <div>
             <div class="tube__name"><span class="tube__label">{{ s.number }} · {{ s.container_type.name }}{% if s.collection_label %} · {{ s.collection_label }}{% endif %}</span>
               <span class="tag {{ s.status|status_tag }}">{{ s.get_status_display }}</span></div>
             <div class="tube__tests">{% for i in s.order_items.all %}{{ i.test.name }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
-            {% if s.status == "TOMADA" %}<div class="tube__tests">Tomada {{ s.collected_at|date:"d/m h:i A" }} por {{ s.collected_by|default:"—" }}</div>{% endif %}
+            {% if s.status == "TOMADA" %}<div class="tube__tests">{% if s.arrived_collected %}Llegó tomada · {{ s.get_origin_display }}{% if s.origin_detail %} ({{ s.origin_detail }}){% endif %} · hora declarada {{ s.collected_at|date:"d/m h:i A" }}{% else %}Tomada {{ s.collected_at|date:"d/m h:i A" }} por {{ s.collected_by|default:"—" }}{% endif %}</div>{% endif %}
             {% if s.status == "RECHAZADA" %}<div class="tube__tests" style="text-decoration:none">Rechazada: {{ s.rejection_reason }}{% if s.replaced_by %} → reemplazo {{ s.replaced_by.number }}{% endif %}</div>{% endif %}
             {% if s.replaces %}<div class="tube__tests">Reemplaza a {{ s.replaces.number }}</div>{% endif %}
           </div>
@@ -48,6 +48,22 @@
             {% if can_collect and s.status == "PENDIENTE" %}
             <form method="post" action="{% url 'orders:collect' order.pk %}" data-offline="MUESTRA_TOMADA">{% csrf_token %}<input type="hidden" name="muestra" value="{{ s.pk }}">
               <button class="btn btn--sm">{% icon "check" %} Tomada</button></form>
+            {% comment %}
+            Muestra que llega ya tomada (envase de 24 h, referida de otro laboratorio).
+            Sin `data-offline` a propósito: recibirla no está en el vocabulario de la cola
+            offline, así que esta acción exige conexión. Ocurre en el mostrador, no en la
+            sala de toma, así que es aceptable.
+            {% endcomment %}
+            <button type="button" class="btn btn--sm btn--ghost" @click="receiving = !receiving" x-show="!receiving">Llegó tomada</button>
+            <form method="post" action="{% url 'orders:receive' order.pk s.pk %}" class="inline-form" x-show="receiving" x-cloak>{% csrf_token %}
+              <select name="origin" aria-label="Procedencia" required>
+                {% for value, label in origin_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+              </select>
+              <input name="origin_detail" placeholder="¿De dónde? (opcional)" maxlength="150">
+              <input type="datetime-local" name="collected_at" aria-label="Hora de toma declarada" required>
+              <button class="btn btn--sm">Registrar</button>
+              <button type="button" class="btn btn--sm btn--ghost" @click="receiving = false" aria-label="Cancelar">{% icon "x" %}</button>
+            </form>
             {% endif %}
             {% if editable and s.status != "RECHAZADA" %}
             <button type="button" class="btn btn--sm btn--ghost" @click="rejecting = !rejecting" x-show="!rejecting">Rechazar</button>

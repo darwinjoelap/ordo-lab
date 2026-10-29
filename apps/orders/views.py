@@ -20,7 +20,7 @@ from apps.accounts.permissions import (
 )
 from apps.catalog.selectors.catalog_queries import search_orderables
 from apps.core.exceptions import ApplicationError
-from apps.orders.forms import AddItemsForm, OrderForm, ReasonForm
+from apps.orders.forms import AddItemsForm, OrderForm, ReasonForm, ReceivedSampleForm
 from apps.orders.models import Order, Sample
 from apps.orders.selectors import order_queries as q
 from apps.orders.services.labels import print_labels
@@ -31,7 +31,12 @@ from apps.orders.services.order_management import (
     mark_paid,
     requote_pending,
 )
-from apps.orders.services.sample_collection import collect_all, collect_sample, reject_sample
+from apps.orders.services.sample_collection import (
+    collect_all,
+    collect_sample,
+    receive_sample,
+    reject_sample,
+)
 from apps.patients.selectors.patient_queries import active_antecedents
 from apps.patients.selectors.patient_search import get_patient, search_patients
 from apps.patients.services.patient_age import patient_age_text
@@ -170,6 +175,9 @@ def order_detail(request, pk):
         # Marcar tomada se permite aunque ya haya resultados cargados (se cargó antes de
         # registrar la toma); no en una orden anulada o entregada.
         "can_collect": order.status not in (Order.Status.ANULADA, Order.Status.ENTREGADA),
+        # Sin `LABORATORIO`: esa procedencia se registra con el botón de toma normal.
+        "origin_choices": [(v, label) for v, label in Sample.Origin.choices
+                           if v != Sample.Origin.LABORATORIO],
     })
 
 
@@ -217,6 +225,29 @@ def sample_collect(request, pk):
             "Muestra {result} tomada.")
     return _run(request, pk, lambda o: collect_all(order=o, user=request.user),
                 "{result} muestra(s) marcadas como tomadas.")
+
+
+@role_required(*COLLECTION_ROLES)
+@require_POST
+def sample_receive(request, pk, sample_pk):
+    """Muestra que llegó ya tomada: procedencia y hora declarada.
+
+    No lleva `data-offline`: recibir una muestra externa no está en el vocabulario de
+    mutaciones de la cola (Fase 14), así que esto exige conexión. Es aceptable porque
+    ocurre en el mostrador, no en la sala de toma, pero conviene saberlo.
+    """
+    form = ReceivedSampleForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, " ".join(
+            m for errores in form.errors.values() for m in errores))
+        return redirect("orders:detail", pk=pk)
+    return _run(request, pk, lambda o: receive_sample(
+        sample=q.sample_of_order(order=o, pk=sample_pk),
+        origin=form.cleaned_data["origin"],
+        origin_detail=form.cleaned_data["origin_detail"],
+        collected_at=form.cleaned_data["collected_at"],
+        user=request.user).number,
+        "Muestra {result} registrada como recibida ya tomada.")
 
 
 @role_required(*COLLECTION_ROLES)

@@ -83,3 +83,37 @@ class AddItemsForm(forms.Form):
 
 class ReasonForm(forms.Form):
     reason = forms.CharField(label="Motivo", max_length=255)
+
+
+class ReceivedSampleForm(forms.Form):
+    """Muestra que llega ya tomada.
+
+    La hora es obligatoria y se pide de verdad, no se asume la de ahora: una glicemia de
+    hace cinco horas no se lee igual que una recién tomada, y rellenarla por comodidad
+    disimularía un dato que el laboratorio necesita para decidir si acepta la muestra.
+    """
+
+    origin = forms.ChoiceField(label="Procedencia", choices=[])
+    origin_detail = forms.CharField(
+        label="¿De dónde?", max_length=150, required=False,
+        help_text="Clínica, laboratorio o persona que la trajo.",
+    )
+    collected_at = forms.DateTimeField(
+        label="Tomada el", widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        error_messages={"required": "Indique la hora en que se tomó la muestra."},
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Sin `LABORATORIO`: esa procedencia se registra con la toma normal.
+        from apps.orders.models import Sample
+        self.fields["origin"].choices = [
+            (value, label) for value, label in Sample.Origin.choices
+            if value != Sample.Origin.LABORATORIO
+        ]
+
+    def clean_collected_at(self):
+        collected_at = self.cleaned_data["collected_at"]
+        if collected_at > timezone.now():
+            raise forms.ValidationError("La hora de toma no puede estar en el futuro.")
+        return collected_at

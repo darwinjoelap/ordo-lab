@@ -15,6 +15,8 @@ urlpatterns = [
     path("<uuid:pk>/", views.order_detail, name="detail"),
     path("<uuid:pk>/etiquetas.pdf", views.labels_pdf, name="labels"),
     path("<uuid:pk>/tomar/", views.sample_collect, name="collect"),
+    path("<uuid:pk>/muestras/<uuid:sample_pk>/recibir/", views.sample_receive,
+         name="receive"),
     path("<uuid:pk>/muestras/<uuid:sample_pk>/rechazar/", views.sample_reject,
          name="reject"),
     path("<uuid:pk>/pagar/", views.order_pay, name="pay"),

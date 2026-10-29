@@ -11,7 +11,8 @@ from PIL import Image as PILImage
 
 from apps.accounts.models import Membership, Role
 from apps.accounts.services.user_management import seed_system_roles
-from apps.orders.models import Order
+from apps.orders.models import Order, Sample
+from apps.orders.services.sample_collection import receive_sample
 from apps.reports.models import Report
 from apps.reports.services.report_emission import emit_report, is_outdated
 from apps.reports.services.report_payload import build_payload
@@ -79,6 +80,50 @@ class PayloadTests(ReportTestBase):
             "TRIGLICÉRIDOS" in payload["pending_tests"][0].upper()
         codes = [t["code"] for s in payload["sections"] for t in s["tests"]]
         assert "TRIGLICERIDOS" not in codes
+
+
+class ProcedenciaEnElInformeTests(ReportTestBase):
+    """Una muestra que no se tomó aquí se advierte al médico (Fase 09).
+
+    Entra al contenido **sólo cuando aplica**, como `amended_tests`: así `SCHEMA` no se
+    toca y la huella de los informes ya emitidos no cambia.
+    """
+
+    def test_sin_procedencia_externa_la_clave_no_aparece(self):
+        payload = build_payload(self.validated_lipids())
+        assert "external_samples" not in payload
+
+    def test_la_muestra_recibida_entra_con_su_hora_declarada(self):
+        order = self.validated_lipids()
+        ayer = timezone.now() - datetime.timedelta(hours=5)
+        receive_sample(sample=order.samples.first(), origin=Sample.Origin.REFERIDA,
+                       origin_detail="Lab. San José", collected_at=ayer)
+
+        externas = build_payload(order)["external_samples"]
+
+        assert len(externas) == 1
+        assert externas[0]["origin"] == "Referida de otro laboratorio"
+        assert externas[0]["detail"] == "Lab. San José"
+        assert externas[0]["collected_at"]
+
+    def test_anadirla_cambia_la_huella_y_pide_emitir_de_nuevo(self):
+        """Es lo correcto: el informe vigente ya no dice toda la verdad."""
+        order = self.validated_lipids()
+        report, _ = emit_report(order=order)
+        assert is_outdated(report, order) is False
+
+        receive_sample(sample=order.samples.first(), origin=Sample.Origin.PACIENTE,
+                       collected_at=timezone.now() - datetime.timedelta(hours=2))
+
+        assert is_outdated(report, order) is True
+
+    def test_el_pdf_lleva_el_aviso(self):
+        order = self.validated_lipids()
+        receive_sample(sample=order.samples.first(), origin=Sample.Origin.DOMICILIO,
+                       collected_at=timezone.now() - datetime.timedelta(hours=1))
+        report, _ = emit_report(order=order)
+        pdf = render_report_pdf(report, verify_url="https://lab.test/verificar/x/")
+        assert pdf.startswith(b"%PDF")
 
 
 class EmissionTests(ReportTestBase):
