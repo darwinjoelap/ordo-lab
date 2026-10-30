@@ -46,10 +46,12 @@
 </section>
 {% endif %}{% endfor %}{% endfor %}
 
-{# data-offline (Fase 14): sin conexión lo escrito se encola en crudo y el servidor
-   calcula, resuelve rangos y marca al sincronizar. `offline-versions` lleva la versión
-   que tenía cada resultado al abrir la pantalla: si otro usuario lo cambió mientras
-   tanto, el servidor lo registra como conflicto en vez de pisarlo. #}
+{% comment %}
+data-offline (Fase 14): sin conexión lo escrito se encola en crudo y el servidor calcula,
+resuelve rangos y marca al sincronizar. `offline-versions` lleva la versión que tenía cada
+resultado al abrir la pantalla: si otro usuario lo cambió mientras tanto, el servidor lo
+registra como conflicto en vez de pisarlo.
+{% endcomment %}
 <form method="post" id="capture-form" novalidate hx-post="{% url 'results:live' order.pk %}"
       hx-trigger="input delay:450ms, change" hx-swap="none" hx-sync="this:replace"
       data-offline="RESULTADO_CAPTURADO" data-offline-order="{{ order.pk }}"
@@ -72,8 +74,10 @@
       {% if can_validate and not block.result.is_validated and block.has_values %}
       <button class="btn btn--sm" formaction="{% url 'results:validate' order.pk %}" name="result" value="{{ block.result.pk }}">{% icon "shield-check" %} Validar</button>
       {% endif %}
-      {# Rectificar (Fase 15): el campo y el botón pertenecen al formulario suelto del
-         final por el atributo `form`, porque un formulario no puede anidarse en otro. #}
+      {% comment %}
+      Rectificar (Fase 15): el campo y el botón pertenecen al formulario suelto del final
+      por el atributo `form`, porque un formulario no puede anidarse en otro.
+      {% endcomment %}
       {% if can_validate and block.result.is_validated %}
       <span x-data="{ open: false }" class="row" style="gap:6px">
         <button type="button" class="btn btn--sm btn--ghost" @click="open = true" x-show="!open">{% icon "rotate-ccw" %} Rectificar</button>
@@ -180,8 +184,10 @@
     {% if can_validate %}<button class="btn" type="submit" data-online-only formaction="{% url 'results:validate' order.pk %}">{% icon "shield-check" %} Validar lo cargado</button>{% endif %}
   </div>
 </form>
-{# Fase 15: un formulario por examen validado, fuera del de captura (no se anidan). Los
-   campos viven en la cabecera del examen y se asocian aquí por el atributo `form`. #}
+{% comment %}
+Fase 15: un formulario por examen validado, fuera del de captura (no se anidan). Los
+campos viven en la cabecera del examen y se asocian aquí por el atributo `form`.
+{% endcomment %}
 {% for block in sheet.blocks %}{% if can_validate and block.result.is_validated %}
 <form method="post" id="amend-{{ block.result.pk }}"
       action="{% url 'results:amend' order.pk block.result.pk %}">{% csrf_token %}</form>
