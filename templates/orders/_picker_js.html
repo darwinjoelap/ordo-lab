@@ -7,9 +7,27 @@
       patient: initial.patient || null,
       has(kind, id) { return this.items.some((i) => i.kind === kind && i.id === id); },
       add(d) {
-        if (this.has(d.kind, d.id)) return;
-        this.items.push({ kind: d.kind, id: d.id, code: d.code, name: d.name });
-        this.changed();
+        if (!this.has(d.kind, d.id)) {
+          this.items.push({ kind: d.kind, id: d.id, code: d.code, name: d.name });
+          this.changed();
+        }
+        // Se limpia tambien cuando el examen ya estaba: en los dos casos esa busqueda
+        // termino. Sin esto lo siguiente que se escribia se concatenaba con lo anterior
+        // ("HEM_COMP" + "DEPURACION") y no encontraba nada, sin decir por que.
+        this.clearSearch();
+      },
+      clearSearch() {
+        const input = this.$root.querySelector('input[name="oq"]');
+        if (input) {
+          input.value = "";
+          // El foco vuelve al buscador a proposito: en recepcion se agregan varios
+          // examenes seguidos y asi se escribe el siguiente sin tocar el raton.
+          input.focus();
+        }
+        const results = this.$root.querySelector("#orderable-results");
+        // Se vacia a mano: asignar `value` por codigo no dispara el evento `input`, asi
+        // que htmx no vuelve a consultar y los resultados viejos se quedarian puestos.
+        if (results) results.innerHTML = "";
       },
       remove(item) { this.items = this.items.filter((i) => i !== item); this.changed(); },
       pickPatient(d) { this.patient = { id: d.id, name: d.name, meta: d.meta, antecedents: d.antecedents || '' }; },
