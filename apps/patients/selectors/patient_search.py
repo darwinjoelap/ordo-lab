@@ -23,10 +23,12 @@ def search_patients(*, query: str) -> QuerySet[Patient]:
         return Patient.objects.none()
 
     return _with_antecedents(Patient.objects.select_related("locality")).filter(
+        # `unaccent` sólo en nombre y apellido: el código interno y el documento no
+        # llevan tildes. Buscar "perez" tiene que encontrar a "Pérez" (ADR-040).
         Q(internal_code__icontains=query)
         | Q(document_number__icontains=query)
-        | Q(first_name__icontains=query)
-        | Q(last_name__icontains=query)
+        | Q(first_name__unaccent__icontains=query)
+        | Q(last_name__unaccent__icontains=query)
     )
 
 

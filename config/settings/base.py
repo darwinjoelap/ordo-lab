@@ -50,6 +50,9 @@ SHARED_APPS = [
     "django.contrib.auth",
     "django.contrib.sessions",
     "django.contrib.messages",
+    # Sin modelos: se instala para registrar el lookup `unaccent`, que es lo que hace
+    # que buscar "uroanalisis" encuentre "UROANÁLISIS" (ADR-040).
+    "django.contrib.postgres",
     "apps.accounts",
 ]
 

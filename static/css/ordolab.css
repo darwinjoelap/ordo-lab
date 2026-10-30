@@ -773,3 +773,15 @@ a.topbar__rate:hover { border-color: var(--line-strong); background: var(--surfa
    están abiertos. */
 .panel-tool { background: var(--surface-2); border-bottom: 1px solid var(--line); }
 .btn.is-active { background: var(--brand-soft); color: var(--brand); }
+
+/* Formulario de «Llegó tomada», en su propia fila dentro del tubo -------------------
+   Estaba dentro de la columna de acciones, como el de rechazo. Pero el de rechazo es un
+   campo y éste son tres: en producción aplastaban la columna del nombre hasta partirla
+   en palabras sueltas («Envase / de / orina / d / 2 / horas»). Aquí ocupa el ancho
+   completo de la tarjeta, debajo, y la fila de arriba recupera su sitio. */
+.tube__form { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center;
+  gap: var(--s2); margin-top: var(--s2); padding-top: var(--s2);
+  border-top: 1px dashed var(--line); }
+.tube__form select { width: auto; min-width: 190px; }
+.tube__form input[name="origin_detail"] { flex: 1 1 180px; min-width: 0; }
+.tube__form input[type="datetime-local"] { width: auto; }

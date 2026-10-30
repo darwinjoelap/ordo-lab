@@ -21,8 +21,9 @@ def generate_internal_code() -> str:
     lab_initials = TenantSettings.get_solo().lab_initials
     if not lab_initials:
         raise ApplicationError(
-            "El laboratorio no tiene configuradas sus siglas (TenantSettings.lab_initials)."
-            " Configúralas en el admin antes de registrar pacientes."
+            "El laboratorio todavía no tiene siglas, y forman parte del número de "
+            "historia de cada paciente (por ejemplo 26LDU000001). Configúrelas en "
+            "Configuración → Datos del laboratorio → Siglas del laboratorio."
         )
 
     year = timezone.localdate().year

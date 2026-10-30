@@ -102,7 +102,10 @@ def search_orderables(*, query: str, limit: int = 12) -> tuple[list[Profile], li
     query = query.strip()
     if not query:
         return [], []
-    match = Q(code__icontains=query) | Q(name__icontains=query)
+    # `unaccent` en el nombre, no en el código: los códigos no llevan tildes y
+    # normalizarlos sería trabajo de más en cada consulta. Nadie escribe las tildes con
+    # un paciente delante, y medio catálogo las lleva (ADR-040).
+    match = Q(code__icontains=query) | Q(name__unaccent__icontains=query)
     profiles = list(Profile.objects.filter(match, is_active=True)[:limit])
     tests = list(
         Test.objects.filter(match, is_active=True).select_related("section")
@@ -191,7 +194,7 @@ def catalog_tests(*, query: str = "", section_id: str = "", show_inactive: bool 
         tests = tests.filter(section_id=section_id)
     query = query.strip()
     if query:
-        tests = tests.filter(Q(code__icontains=query) | Q(name__icontains=query))
+        tests = tests.filter(Q(code__icontains=query) | Q(name__unaccent__icontains=query))
     return tests.order_by("-is_active", "section__order_index", "name")
 
 

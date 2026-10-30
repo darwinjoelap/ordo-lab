@@ -47,7 +47,14 @@ class OrderForm(forms.Form):
         self.fields["patient"].required = require_patient
         self.fields["price_list"].queryset = valid_price_lists(on_date=today)
         self.fields["price_list"].initial = default_price_list(on_date=today)
-        self.fields["reference_currency"].queryset = active_currencies()
+        # La recepción cotiza en bolívares todo el día: la segunda moneda sale puesta.
+        # Se elige la primera activa que no sea la base, en el orden que fija el propio
+        # laboratorio en Monedas; si sólo tiene la base, queda en "—" como antes.
+        monedas = active_currencies()
+        self.fields["reference_currency"].queryset = monedas
+        if self.fields["reference_currency"].initial is None:
+            self.fields["reference_currency"].initial = monedas.exclude(
+                is_base=True).order_by("order_index", "code").first()
         self.fields["discounts"].queryset = usable_discounts(on_date=today)
 
     def clean(self):

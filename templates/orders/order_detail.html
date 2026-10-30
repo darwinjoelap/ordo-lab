@@ -55,15 +55,6 @@
             sala de toma, así que es aceptable.
             {% endcomment %}
             <button type="button" class="btn btn--sm btn--ghost" @click="receiving = !receiving" x-show="!receiving">Llegó tomada</button>
-            <form method="post" action="{% url 'orders:receive' order.pk s.pk %}" class="inline-form" x-show="receiving" x-cloak>{% csrf_token %}
-              <select name="origin" aria-label="Procedencia" required>
-                {% for value, label in origin_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
-              </select>
-              <input name="origin_detail" placeholder="¿De dónde? (opcional)" maxlength="150">
-              <input type="datetime-local" name="collected_at" aria-label="Hora de toma declarada" required>
-              <button class="btn btn--sm">Registrar</button>
-              <button type="button" class="btn btn--sm btn--ghost" @click="receiving = false" aria-label="Cancelar">{% icon "x" %}</button>
-            </form>
             {% endif %}
             {% if editable and s.status != "RECHAZADA" %}
             <button type="button" class="btn btn--sm btn--ghost" @click="rejecting = !rejecting" x-show="!rejecting">Rechazar</button>
@@ -75,6 +66,23 @@
             </form>
             {% endif %}
           </div>
+          {% comment %}
+          Fila propia, no en la columna de acciones: son tres campos y ahí dentro
+          aplastaban el nombre del tubo hasta partirlo en palabras sueltas (visto en
+          producción el 2026-10-30). `tube__form` lo lleva a lo ancho de la tarjeta.
+          {% endcomment %}
+          {% if can_collect and s.status == "PENDIENTE" %}
+          <form method="post" action="{% url 'orders:receive' order.pk s.pk %}" class="tube__form" x-show="receiving" x-cloak>{% csrf_token %}
+            <label class="sr-only" for="origen-{{ s.pk }}">Procedencia</label>
+            <select name="origin" id="origen-{{ s.pk }}" required>
+              {% for value, label in origin_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+            </select>
+            <input name="origin_detail" placeholder="¿De dónde? (opcional)" maxlength="150">
+            <input type="datetime-local" name="collected_at" aria-label="Hora de toma declarada" required>
+            <button class="btn btn--sm">Registrar</button>
+            <button type="button" class="btn btn--sm btn--ghost" @click="receiving = false" aria-label="Cancelar">{% icon "x" %}</button>
+          </form>
+          {% endif %}
         </div>
         {% empty %}<p class="muted small">La orden no tiene tubos: revise la asignación de tubos de sus exámenes en el catálogo.</p>{% endfor %}
       </div>
