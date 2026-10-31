@@ -384,8 +384,10 @@ class _Decor:
             text = "REEMPLAZADO"
         elif self.payload.get("amended_tests"):
             text = "RECTIFICADO"
-        elif self.report.is_partial:
-            text = "PARCIAL"
+        # Un informe parcial **no** lleva marca de agua: es un informe válido de lo que ya
+        # se validó, no un documento del que haya que desconfiar. Que es parcial lo dicen
+        # la insignia de la cabecera y el recuadro que lista lo pendiente. Reemplazado y
+        # rectificado sí la llevan: ahí la advertencia es justamente el punto.
         if not text:
             return
         canvas.saveState()
