@@ -73,6 +73,12 @@ class TenantSettings(models.Model):
         help_text="Pasado este plazo, la página de verificación sigue confirmando el "
                   "informe pero ya no permite descargarlo.",
     )
+    report_external_sample_notice = models.BooleanField(
+        "Advertir en el informe las muestras que no se tomaron aquí", default=True,
+        help_text="Imprime un aviso con la procedencia y la hora declarada cuando una "
+                  "muestra llegó ya tomada. Afecta sólo a los informes que se emitan "
+                  "desde ahora: los ya emitidos conservan lo que decían.",
+    )
     label_extra_for_order = models.BooleanField(
         "Etiqueta extra para la hoja de la orden", default=False,
         help_text="Imprime una etiqueta más, con el número de orden, para pegar en la "

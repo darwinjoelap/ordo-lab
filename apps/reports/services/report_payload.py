@@ -72,8 +72,13 @@ def _signer(user) -> dict:
     }
 
 
-def _external_samples(order) -> list[dict]:
+def _external_samples(order, *, enabled: bool) -> list[dict]:
     """Muestras que **no** se tomaron en el laboratorio.
+
+    Con el aviso apagado (`report_external_sample_notice`) devuelve lista vacía y la clave
+    no entra al contenido. Es deliberado: el contenido congelado es lo que el informe
+    imprime, así que apagar el aviso no debe dejar en la huella un dato invisible. La
+    trazabilidad no se pierde — vive en la muestra, que es donde debe estar.
 
     Entra al contenido sólo cuando hay alguna, igual que `amended_tests`: así el 90 % de
     los informes no cambia de forma y, sobre todo, `SCHEMA` no se toca. Subirlo cambiaría
@@ -84,6 +89,8 @@ def _external_samples(order) -> list[dict]:
     cinco horas antes en casa no se interpreta igual que una tomada en la recepción. Por
     eso se imprime la hora **declarada**, no sólo la procedencia.
     """
+    if not enabled:
+        return []
     externas = []
     for sample in order.samples.exclude(status="RECHAZADA").order_by("sequence"):
         if sample.origin == "LABORATORIO":
@@ -136,6 +143,11 @@ def build_payload(order) -> dict:
         "order": {
             "id": str(order.pk), "number": order.number,
             "ordered_at": _iso(order.ordered_at), "collected_at": _iso(facts["collected_at"]),
+            # Sólo cuando la última toma no es la primera: una orden que mezcla un envase
+            # recogido en casa con una sangre extraída aquí abarca horas muy distintas, y
+            # dar sólo la primera engaña al médico sobre la antigüedad de cada muestra.
+            **({"collected_until": _iso(facts["collected_until"])}
+               if facts["collected_until"] != facts["collected_at"] else {}),
             "requested_by": order.requested_by,
             "condition": (order.get_patient_condition_display()
                           if order.patient_condition != "NINGUNA" else ""),
@@ -147,8 +159,8 @@ def build_payload(order) -> dict:
         **({"amended_tests": amended} if (amended := [
             t["name"] for section in sections for t in section["tests"]
             if t.get("amended")]) else {}),
-        **({"external_samples": externas}
-           if (externas := _external_samples(order)) else {}),
+        **({"external_samples": externas} if (externas := _external_samples(
+            order, enabled=settings_obj.report_external_sample_notice)) else {}),
     }
 
 

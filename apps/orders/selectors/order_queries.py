@@ -185,14 +185,26 @@ def report_tab_counts() -> dict:
 
 def report_order_facts(*, order: Order) -> dict:
     """Datos de la orden que el informe necesita y que no son resultados: exámenes aún
-    sin validar (informe parcial) y primera toma de muestra."""
+    sin validar (informe parcial) y **cuándo se tomaron las muestras**.
+
+    Se devuelven la primera y la última, no sólo la primera. Con todas las muestras
+    tomadas en el mostrador las dos coinciden y da igual; pero una orden puede mezclar un
+    envase de orina recogido ayer en casa con una sangre extraída hoy (ADR-039), y
+    entonces imprimir sólo la primera dice que la hematología se tomó treinta horas antes
+    de lo que se tomó. Visto en producción el 2026-10-30.
+    """
     pending = list(
         order.items.exclude(status__in=(OrderItem.Status.VALIDADO, OrderItem.Status.ANULADO))
         .order_by("test__section__order_index", "order_index")
         .values_list("test__name", flat=True))
-    first_taken = (order.samples.filter(status=Sample.Status.TOMADA)
-                   .order_by("collected_at").values_list("collected_at", flat=True).first())
-    return {"pending_tests": pending, "collected_at": first_taken}
+    tomas = list(order.samples.filter(status=Sample.Status.TOMADA)
+                 .exclude(collected_at=None)
+                 .order_by("collected_at").values_list("collected_at", flat=True))
+    return {
+        "pending_tests": pending,
+        "collected_at": tomas[0] if tomas else None,
+        "collected_until": tomas[-1] if tomas else None,
+    }
 
 
 # Muestras por tomar (lista de trabajo de la toma) ----------------------------------------

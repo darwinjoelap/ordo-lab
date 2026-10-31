@@ -91,6 +91,20 @@ def fmt_dt(value: str, *, with_time: bool = True) -> str:
     return moment.strftime("%d/%m/%Y %I:%M %p" if with_time else "%d/%m/%Y")
 
 
+def _toma(order: dict) -> str:
+    """La hora de toma: una sola, o el rango cuando las muestras no se tomaron a la vez.
+
+    `collected_until` sólo viene cuando difiere de la primera. Imprimir sólo la primera
+    haría creer que toda la orden se tomó entonces, y con un envase de orina recogido el
+    día anterior eso son treinta horas de diferencia sobre una hematología.
+    """
+    desde = fmt_dt(order.get("collected_at", ""))
+    if not desde:
+        return "—"
+    hasta = fmt_dt(order.get("collected_until", ""))
+    return f"{desde} a {hasta}" if hasta else desde
+
+
 def _p(text: str, style: str = "cell") -> Paragraph:
     return Paragraph(escape(text or "").replace("\n", "<br/>"), ST[style])
 
@@ -455,7 +469,7 @@ class _Decor:
             [("Edad", patient.get("age", "")), ("Sexo", patient.get("sex", "")),
              ("Registro", fmt_dt(order.get("ordered_at", "")))],
             [("Médico", order.get("requested_by") or "—"),
-             ("Toma", fmt_dt(order.get("collected_at", "")) or "—"),
+             ("Toma", _toma(order)),
              ("Emitido", timezone.localtime(emitted).strftime("%d/%m/%Y %I:%M %p")
               if emitted else "")],
         ]

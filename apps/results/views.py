@@ -107,15 +107,20 @@ def validate(request, pk):
     if not can_validate_results(request.user):
         raise PermissionDenied("Su rol no puede validar resultados.")
     order = _order(pk)
+    sheet = None
     try:
-        save_sheet(order, entries=entries_from_post(request.POST),
-                   notes=notes_from_post(request.POST), user=request.user)
+        sheet = save_sheet(order, entries=entries_from_post(request.POST),
+                           notes=notes_from_post(request.POST), user=request.user)
         validated = validate_results(order=order, result_ids=request.POST.getlist("result"),
                                      user=request.user)
     except ApplicationError as exc:
         messages.error(request, exc.message)
     else:
         messages.success(request, f"{len(validated)} examen(es) validado(s).")
+    # Los avisos del guardado —suma de la fórmula leucocitaria, tubo sin marcar, lote
+    # vencido— se muestran también aquí: validar es la última ocasión de atenderlos.
+    for warning in (sheet.warnings if sheet else []):
+        messages.warning(request, warning)
     return redirect("results:capture", pk=order.pk)
 
 

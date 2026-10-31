@@ -39,6 +39,7 @@ from apps.patients.services.patient_age import patient_age_days
 from apps.results.models import Result, ResultValue
 from apps.results.selectors.result_queries import previous_values
 from apps.results.services.interpretation import Assessment, assess
+from apps.results.services.sum_checks import sum_warnings
 from apps.results.services.value_parsing import (
     VT_CALCULATED,
     VT_MULTI,
@@ -374,6 +375,9 @@ def save_sheet(order, *, entries: dict, notes: dict | None = None, user=None,
             changed = changed or not row.is_calculated
         _update_status(block, sheet, user=user if changed else None, now=now, bump=changed)
     refresh_order_progress(order)
+    # Las sumas se revisan al guardar y no al armar la planilla: en vivo avisarían de lo
+    # que todavía falta escribir (ADR-042).
+    sheet.warnings.extend(sum_warnings(sheet))
     return sheet
 
 
