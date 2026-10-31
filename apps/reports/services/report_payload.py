@@ -161,6 +161,14 @@ def build_payload(order) -> dict:
             if t.get("amended")]) else {}),
         **({"external_samples": externas} if (externas := _external_samples(
             order, enabled=settings_obj.report_external_sample_notice)) else {}),
+        # La clave sólo aparece cuando hay algo que anunciar **y** el laboratorio apagó
+        # el aviso (ADR-043). Agregarla siempre cambiaría la huella de todos los
+        # informes ya emitidos; agregarla también en los finales dejaría obsoletos los
+        # finales de un laboratorio que apaga un aviso que a ellos no les toca.
+        # `pending_tests` sigue yendo siempre: es un hecho de la orden, no una
+        # preferencia de impresión, y el tipo PARCIAL se sigue calculando con él.
+        **({"partial_notice": False}
+           if facts["pending_tests"] and not settings_obj.report_partial_notice else {}),
     }
 
 

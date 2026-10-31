@@ -10,7 +10,7 @@ SECTIONS = [
                                              "website"]),
     ("Identidad visual", ["logo", "color_primary", "lab_initials"]),
     ("Informe", ["report_footer_text", "report_disclaimer", "report_link_days",
-                 "report_external_sample_notice"]),
+                 "report_external_sample_notice", "report_partial_notice"]),
     ("Operación", ["require_second_validation"]),
     ("Etiquetas de tubo", ["label_width_mm", "label_height_mm", "label_extra_for_order"]),
 ]

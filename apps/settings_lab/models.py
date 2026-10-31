@@ -79,6 +79,13 @@ class TenantSettings(models.Model):
                   "muestra llegó ya tomada. Afecta sólo a los informes que se emitan "
                   "desde ahora: los ya emitidos conservan lo que decían.",
     )
+    report_partial_notice = models.BooleanField(
+        "Anunciar en el informe que es parcial", default=True,
+        help_text="Imprime la insignia PARCIAL en la cabecera y el recuadro que lista "
+                  "los exámenes pendientes por validar. Apagado, el informe sigue "
+                  "identificándose como parcial en la línea de la versión, pero sin "
+                  "advertencia. Afecta sólo a los informes que se emitan desde ahora.",
+    )
     label_extra_for_order = models.BooleanField(
         "Etiqueta extra para la hoja de la orden", default=False,
         help_text="Imprime una etiqueta más, con el número de orden, para pegar en la "

@@ -258,10 +258,21 @@ def _legend(payload: dict) -> Paragraph | None:
     return Paragraph(" · ".join(parts), ST["small"]) if parts else None
 
 
+def _anuncia_parcial(payload: dict) -> bool:
+    """¿El informe advierte que es parcial? (ADR-043)
+
+    Se lee del payload y no de la configuración de hoy, para que reimprimir un informe
+    viejo salga como salió el día que se emitió. La clave sólo está cuando el aviso se
+    apagó, así que ausente significa encendido.
+    """
+    return payload.get("partial_notice", True)
+
+
 def _story(payload: dict) -> list:
     color = _hex(payload["lab"].get("color", ""))
     story: list = []
-    if payload.get("kind") == "PARCIAL" and payload.get("pending_tests"):
+    if (payload.get("kind") == "PARCIAL" and payload.get("pending_tests")
+            and _anuncia_parcial(payload)):
         box = Table([[Paragraph(
             "<b>INFORME PARCIAL.</b> Pendientes por validar: "
             + escape(", ".join(payload["pending_tests"])) + ".", ST["warn"])]],
@@ -442,7 +453,8 @@ class _Decor:
                 canvas.drawRightString(right, y, line)
                 y -= 3.4 * mm
         badge = ("RECTIFICADO" if self.payload.get("amended_tests")
-                 else "PARCIAL" if self.report.is_partial else "")
+                 else "PARCIAL" if self.report.is_partial
+                 and _anuncia_parcial(self.payload) else "")
         if badge:
             width = 18 * mm if badge == "PARCIAL" else 26 * mm
             badge_x = (right - canvas.stringWidth(version, "Helvetica", 8) - width

@@ -171,7 +171,13 @@ class EvolutionTests(PatientBase):
         body = self.client.get(f"/pacientes/{self.patient.pk}/evolucion/"
                                f"?p={self.param.pk}").content.decode()
         assert body.count("<circle class=\"chart__pt") == 3 and "chart__band" in body
-        assert "+32,6 %" in body and "300" not in body.split("<table")[1]
+        assert "+32,6 %" in body
+        # Acotado a la tabla y buscando la celda, no el número suelto: `split("<table")[1]`
+        # llegaba hasta el final del documento e incluía el panel lateral de parámetros,
+        # donde un UUID con `300` dentro hacía fallar la prueba al azar (2026-10-30:
+        # `...b0a6-9913a300a76d`). Mismo idioma que `test_reports.py` con `">210<"`.
+        tabla = body.split("<table")[1].split("</table>")[0]
+        assert ">300<" not in tabla, "un resultado sin validar no entra a la evolución"
 
     def test_pdf_de_evolucion(self):
         url = f"/pacientes/{self.patient.pk}/evolucion/pdf/"

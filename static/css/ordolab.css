@@ -607,10 +607,18 @@ input[readonly], input:disabled, select:disabled { background: var(--surface-2);
    Resultados (Fase 10, ADR-025)
    ========================================================================== */
 .content > *, form > .stack { min-width: 0; }
-.results-table { table-layout: fixed; }
+/* El `min-width` es lo que impide que la tabla se aplaste (ADR-043). Cinco columnas
+   llevan ancho fijo (200+90+110+130 = 530 px) y PARÁMETRO el 28 %; REFERENCIA se queda
+   con lo que sobre, y por debajo de ~1250 px de ventana no sobraba nada: la columna
+   quedaba en CERO y «12,0 - 16,0 g/dL» se imprimía en vertical, una letra por línea,
+   encimada con ANTERIOR. A 1024 px cada fila medía 246 px en vez de 40. La salida de
+   emergencia existía sólo por debajo de 820 px, que es donde no hacía falta.
+   920 = 530 fijos + 130 para la referencia + el 28 % del parámetro. Por debajo de eso
+   `.table-wrap` rueda en horizontal, que es honesto; aplastar no lo era. */
+.results-table { table-layout: fixed; min-width: 920px; }
 .results-table td { padding-top: 5px; padding-bottom: 5px; overflow-wrap: anywhere; }
 @media (max-width: 820px) {
-  .results-table { table-layout: auto; min-width: 720px; }
+  .results-table { table-layout: auto; }
   .actionbar .hint { display: none; }
 }
 .results-table tr:has(.flag--critico) { background: var(--danger-soft); }
