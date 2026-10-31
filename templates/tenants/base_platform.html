@@ -7,7 +7,16 @@ un laboratorio, es el panel interno de Ordo Lab.
 {% endcomment %}
 {% block title %}{% block page_title_text %}Panel{% endblock %} · Ordo Lab{% endblock %}
 {% block body %}
-<div class="app">
+{% comment %}
+El `x-data` no es decorativo: en móvil el CSS saca la barra de la pantalla
+(`transform: translateX(-232px)`) y sólo la devuelve `.app.is-mobile-open`. Sin este
+estado y sin el botón Menú de la barra superior, la barra queda fuera sin forma de
+traerla, y el panel se vuelve inservible en un teléfono: se entra a Resumen y no se
+puede llegar a Laboratorios ni a Planes. La plantilla del laboratorio tenía el botón;
+ésta nació sin él (ADR-044).
+{% endcomment %}
+<div class="app" x-data="{ mobile: false }" :class="{ 'is-mobile-open': mobile }"
+     @keydown.escape.window="mobile = false">
   <aside class="sidebar" aria-label="Navegación de la plataforma">
     <a class="sidebar__brand" href="{% url 'tenants:dashboard' %}" title="Ordo Lab">
       <img src="{% static 'img/brand/ordolab-mark-96.png' %}" alt="">
@@ -28,9 +37,12 @@ un laboratorio, es el panel interno de Ordo Lab.
       </form>
     </div>
   </aside>
+  <div class="backdrop only-mobile" x-show="mobile" x-cloak @click="mobile = false"></div>
 
   <div class="main">
     <header class="topbar">
+      <button type="button" class="btn btn--ghost btn--icon only-mobile"
+              @click="mobile = !mobile" aria-label="Menú">{% icon "menu" %}</button>
       <div class="topbar__title">
         <div class="crumbs">{% block crumbs %}Plataforma{% endblock %}</div>
         <h1>{% block page_title %}Panel{% endblock %}</h1>

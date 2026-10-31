@@ -23,6 +23,11 @@ class User(AbstractUser):
     # Clave temporal puesta por el administrador del laboratorio (Fase 11b): obliga a
     # cambiarla en el primer ingreso.
     must_change_password = models.BooleanField("Debe cambiar la clave", default=False)
+    # Usuario de soporte de Ordo Lab dentro del laboratorio (ADR-045). Se crea al
+    # aprovisionar, **se ve en Configuración → Usuarios como cualquier otro** y el
+    # laboratorio puede desactivarlo. La marca existe para poder nombrarlo en pantalla y
+    # para no confundirlo con el personal del laboratorio en ningún conteo.
+    is_support = models.BooleanField("Usuario de soporte de Ordo Lab", default=False)
 
     class Meta:
         verbose_name = "Usuario"

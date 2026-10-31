@@ -6,7 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 from django_tenants.utils import get_public_schema_name, schema_context
 
-from apps.accounts.services.user_management import create_initial_admin
+from apps.accounts.services.user_management import create_initial_admin, create_support_user
 from apps.billing.services.seeding import seed_billing_defaults
 from apps.catalog.services.seeding import seed_uroanalisis
 from apps.catalog.services.seeding_containers import seed_containers
@@ -36,9 +36,10 @@ def provision_tenant(
     seed_catalog: bool = True,
 ) -> tuple[Tenant, str]:
     """
-    Crea el laboratorio, su esquema, su dominio primario, su suscripción de prueba
-    y su usuario ADMIN_LAB inicial. Idempotente respecto al tenant: si el
-    schema_name ya existe, levanta ApplicationError sin tocar nada.
+    Crea el laboratorio, su esquema, su dominio primario, su suscripción de prueba,
+    su usuario ADMIN_LAB inicial y el usuario de soporte de Ordo Lab. Idempotente
+    respecto al tenant: si el schema_name ya existe, levanta ApplicationError sin
+    tocar nada.
 
     Devuelve `(tenant, admin_password)`. `admin_password` es la contraseña dada
     o, si no se dio ninguna, la temporal generada — el llamador decide si la
@@ -95,6 +96,10 @@ def provision_tenant(
     # conexión/esquema, no tiene sentido anidarlo en la transacción de public.
     with schema_context(schema_name):
         _, admin_password = create_initial_admin(email=admin_email, password=admin_password)
+        # Usuario de soporte de Ordo Lab (ADR-045): nace visible en Configuración →
+        # Usuarios y sin contraseña utilizable. Para que alguien pueda entrar con él hay
+        # que correr `clave_soporte` después de crear el laboratorio.
+        create_support_user()
         create_default_settings()
         if seed_catalog:
             seed_uroanalisis()
