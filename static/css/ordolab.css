@@ -198,6 +198,13 @@ hr { border: 0; border-top: 1px solid var(--line); margin: var(--s4) 0; }
 .topbar__title { display: flex; flex-direction: column; min-width: 0; }
 .topbar__title h1 { font-size: var(--fs-md); line-height: 1.2; }
 .crumbs { font-size: var(--fs-xs); color: var(--muted); }
+/* La barra tiene altura fija (--topbar-h). Si el título envuelve a dos líneas el
+   contenido no la hace crecer: se sale y **se recorta por arriba**, y lo que se pierde
+   es el nombre del laboratorio. Pasó con un logo ancho, que deja poco sitio al título
+   (ADR-047). El `nowrap` existía sólo bajo 820 px, que es donde no hacía falta. */
+.topbar__title h1, .topbar__title .crumbs {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .crumbs a { color: var(--muted); }
 .topbar__search { margin-left: auto; width: min(360px, 40vw); position: relative; }
 .topbar__search .icon { position: absolute; left: 10px; top: 8px; color: var(--muted); }
@@ -501,7 +508,6 @@ input[readonly], input:disabled, select:disabled { background: var(--surface-2);
   .app.is-mobile-open .sidebar { transform: none; }
   .topbar { padding: 0 var(--s3); }
   .topbar__search, .topbar__actions, .only-desktop { display: none !important; }
-  .topbar__title h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .content { padding: var(--s4); }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .form-grid > [class*="col-"] { grid-column: span 12; }
