@@ -4,8 +4,7 @@
 # pero nunca estuvo instalado: sin esto el despliegue arranca y muere en el import).
 sentry-sdk==2.72.*
 
-# Media en Cloudinary (ADR-022 lo dejó pendiente para esta fase). El disco de Railway es
-# efímero: sin esto, las firmas, sellos y logos subidos desaparecen en cada despliegue, y
-# los informes saldrían sin firma.
-cloudinary==1.46.*
-django-cloudinary-storage==0.3.*
+# Media en Cloudflare R2 (ADR-046; antes Cloudinary). El disco de Railway es efímero:
+# sin almacenamiento externo, las firmas, sellos y logos desaparecen en cada despliegue y
+# los informes salen sin firma. R2 habla S3, así que se usa el backend de siempre.
+django-storages[s3]==1.14.*
