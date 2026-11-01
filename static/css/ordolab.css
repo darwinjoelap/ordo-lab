@@ -195,7 +195,10 @@ hr { border: 0; border-top: 1px solid var(--line); margin: var(--s4) 0; }
   background: rgb(255 255 255 / 92%); backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--line);
 }
-.topbar__title { display: flex; flex-direction: column; min-width: 0; }
+/* `min-width` y no 0: el título era lo único encogible de la barra, así que el buscador
+   —el único con ancho declarado— se lo comía. A 1280 px quedaba en 84 px, o sea «M…» y
+   «H…». Con un suelo, lo que cede primero es el buscador, que para eso le sobra. */
+.topbar__title { display: flex; flex-direction: column; min-width: 110px; }
 .topbar__title h1 { font-size: var(--fs-md); line-height: 1.2; }
 .crumbs { font-size: var(--fs-xs); color: var(--muted); }
 /* La barra tiene altura fija (--topbar-h). Si el título envuelve a dos líneas el
@@ -206,7 +209,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: var(--s4) 0; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .crumbs a { color: var(--muted); }
-.topbar__search { margin-left: auto; width: min(360px, 40vw); position: relative; }
+.topbar__search { margin-left: auto; width: min(360px, 40vw); min-width: 180px;
+  position: relative; }
 .topbar__search .icon { position: absolute; left: 10px; top: 8px; color: var(--muted); }
 .topbar__search input[type=search] { padding-left: 32px; background: var(--surface-2); }
 .topbar__actions { display: flex; gap: var(--s2); }
