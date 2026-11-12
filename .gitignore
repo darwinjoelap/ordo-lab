@@ -46,3 +46,9 @@ commit_msg.txt
 docs/
 TASKS.md
 CLAUDE.md
+
+# SDK de Railway IaC: solo lo usa el CLI en esta maquina para leer
+# .railway/railway.ts. NO se sube: un package.json en la raiz hace que Nixpacks
+# trate el proyecto como Node y el build de Python muera (ADR-048).
+package.json
+package-lock.json

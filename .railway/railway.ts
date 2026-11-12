@@ -1,39 +1,59 @@
-import { defineRailway, github, project, service } from "railway/iac";
-// This repository manages only its own resources in the environment. Other
-// repositories export their own partial name.
-// See https://docs.railway.com/infrastructure-as-code#multi-repo-projects
-export const partial = "web";
+import { bucket, defineRailway, github, postgres, project, service, volume } from "railway/iac";
 
-// El proyecto tiene un segundo servicio, `cron-bcv`, que trae la tasa del BCV a las
-// 23:00 UTC (7 pm de Caracas). NO está declarado aquí y es deliberado, por dos razones:
+// Infraestructura de Ordo-Lab (ADR-048). Reemplaza a `railway.json`, que Railway deja de
+// leer el 2026-12-01.
 //
-//   1. IaC no sabe declarar horarios de cron. La referencia enumera servicios, bases,
-//      volúmenes, buckets, dominios, variables, réplicas y grupos; `cronSchedule` no
-//      existe. Declararlo aquí lo dejaría sin horario, es decir, muerto.
-//   2. Un parcial con nombre sólo borra los recursos que él mismo declara, así que
-//      `cron-bcv` queda intacto mientras no aparezca en este archivo.
+// Partió de `railway config migrate`, con dos correcciones a mano en `cron-bcv` (abajo).
+// Revisar siempre con `railway config plan` antes de `apply`: esto toca infraestructura
+// viva.
 //
-// Está configurado a mano en la interfaz de Railway (Start Command, Cron Schedule y
-// Restart Policy en `Never`); `railway.cron.json`, en la raíz del repositorio, conserva
-// esos valores como documentación. Un servicio creado después del 2026-08-28 ya no puede
-// acogerse a Config as Code, así que ese archivo no lo lee nadie.
-//
-// Si alguna vez se "ordena" este archivo agregándole `cron-bcv`, el parcial lo reclama y
-// pasa a gestionarlo sin horario. No hacerlo.
+// **Entorno completo, sin `partial`.** Este repositorio es dueño de todo el proyecto, así
+// que el archivo describe el estado deseado entero: un recurso que falte aquí se propone
+// para BORRAR en el próximo `apply`. Por eso están Postgres, su volumen, el bucket del
+// PITR y el volumen restaurado, aunque ninguno se configure desde aquí.
 export default defineRailway(() => {
+  const ordoLab = github("darwinjoelap/ordo-lab", { branch: "main", checkSuites: false });
+
+  const Postgres = postgres("Postgres", { region: "us-west2" });
+  Postgres.networking = { privateNetworkEndpoint: "postgres" };
+  const postgresVolume = volume("postgres-volume", { alerts: { usage: { "100": {}, "80": {}, "95": {} } }, allowOnlineResize: true, region: "us-west2", sizeMB: 5000 });
+  // Resto de la restauración de prueba del PITR (2026-10-29), desconectado. Se declara
+  // para que la migración no cambie nada; borrarlo es una decisión aparte y deliberada:
+  // quitar esta línea y el `apply` lo propondrá para borrar.
+  const postgresRestored = volume("postgres-restored", { alerts: { usage: { "100": {}, "80": {}, "95": {} } }, allowOnlineResize: true, region: "us-west2", sizeMB: 50000 });
+  const PostgresPITR = bucket("Postgres-PITR", { region: "sjc" });
+
   const web = service("web", {
-    source: github("darwinjoelap/ordo-lab", { branch: "main", checkSuites: false }),
+    source: ordoLab,
     build: { buildCommand: "pip install -r requirements/production.txt && python manage.py collectstatic --noinput", buildEnvironment: "V3", builder: "NIXPACKS" },
     start: "gunicorn config.wsgi --log-file - --workers 3 --timeout 60",
+    // Sólo web migra. Si dos servicios corren migraciones en el mismo despliegue, compiten
+    // por los mismos esquemas.
     preDeploy: "python manage.py migrate_schemas --noinput",
     replicas: { "us-west2": 1 },
-    // `*.biolifeve.com` se retiró el 2026-10-27 (ADR-037). Dejarlo aquí haría que el
-    // cutover a IaC lo volviera a crear, y gastaría uno de los dos cupos del plan Hobby.
     domains: ["*.lab.ordove.com"],
   });
 
+  // Trae la tasa oficial del BCV a las 23:00 UTC (7 pm de Caracas).
+  //
+  // `railway config migrate` le generó `start: gunicorn …` y `preDeploy: migrate_schemas`:
+  // los valores de `railway.json`, que es el archivo de web. Aplicado así, el cron habría
+  // arrancado un servidor que no termina nunca; como Railway salta una ejecución si la
+  // anterior sigue viva, la tasa habría dejado de actualizarse para siempre, sin un solo
+  // error. Corregido a mano: el comando del cron y sin `preDeploy`.
+  const cronBcv = service("cron-bcv", {
+    source: ordoLab,
+    build: { buildCommand: "pip install -r requirements/production.txt && python manage.py collectstatic --noinput", buildEnvironment: "V3", builder: "NIXPACKS" },
+    start: "python manage.py actualizar_tasa_bcv",
+    replicas: { "us-west2": 1 },
+    deploy: { cronSchedule: "0 23 * * *", restartPolicyType: "NEVER" },
+  });
+
   return project("Ordo-Lab", {
+    // Ninguna variable vive en este archivo: SECRET_KEY, DATABASE_URL y las de R2 son
+    // secretos. `managed: true` haría a este archivo dueño de todas, y el primer `apply`
+    // borraría las que no estuvieran escritas aquí, es decir todas.
     variables: { managed: false },
-    resources: [web],
+    resources: [web, cronBcv, Postgres, postgresVolume, postgresRestored, PostgresPITR],
   });
 });
